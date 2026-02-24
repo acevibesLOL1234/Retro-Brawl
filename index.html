@@ -1009,7 +1009,7 @@ function makeFighter(x,isCPU,isOnlineP2){
     state:'idle',stateTimer:0,
     jabCD:0,heavyCD:0,blockCD:0,
     punchCD:0,stunned:0,hurtFlash:0,
-    blocking:false,blockAnim:0,
+    blocking:false,blockAnim:0,postBlockRestore:0,
     leadHand:0,comboCount:0,lastPunchT:0,
     walkDir:0,legPhase:0,bobPhase:0,
     shortCol1:cols[0],shortCol2:cols[1],
@@ -1088,6 +1088,13 @@ function doAtk(atk,def,type){
   if(type==='jab'&&atk.jabCD>0)return;
   if(type==='heavy'&&atk.heavyCD>0){addFX('COOLING!',atk.x,-60,'#888');return;}
   if(atk.stamina<8){addFX('NO STAM!',atk.x,-60,'#666');return;}
+
+  /* Punching while blocking: drop guard for punch duration, then auto-restore */
+  if(atk.blocking){
+    atk.blocking=false;
+    atk.blockAnim=0;
+    atk.postBlockRestore=type==='jab'?22:36;
+  }
 
   atk.leadHand=1-atk.leadHand;
   atk.state=type;atk.stateTimer=type==='jab'?16:28;
@@ -1541,6 +1548,13 @@ function update(){
     if(f.stunned>0)f.stunned--;
     if(f.hurtFlash>0)f.hurtFlash--;
     if(f.stateTimer>0){f.stateTimer--;if(f.stateTimer<=0&&f.state!=='ko')f.state='idle';}
+    /* Auto-restore guard after punch-while-blocking */
+    if(f.postBlockRestore>0){
+      f.postBlockRestore--;
+      if(f.postBlockRestore<=0&&!f.stunned&&f.state!=='ko'&&f.state!=='hurt'){
+        f.blocking=true;
+      }
+    }
     if(!f.blocking)f.stamina=Math.min(100,f.stamina+0.28);
     /* Block anim lerp */
     if(f.blocking){if(f.blockAnim<8)f.blockAnim=Math.min(8,f.blockAnim+2);}
