@@ -866,11 +866,10 @@ function startOnlineGame(asHost, oppName){
   document.getElementById('p2HudName').textContent=opponentName;
 
   guestInputQueue=[];
+  guestLastDir=0;
   startGame();
-
-  if(!asHost){
-    gameActive=false;
-  }
+  // Guest: do NOT set gameActive=false — rendering needs it true.
+  // update() checks (onlineMode&&!isHost) and returns early, so no local physics run.
 }
 
 var broadcastThrottle=0;
@@ -897,11 +896,11 @@ function hostBroadcast(){
 function processGuestInputs(){
   while(guestInputQueue.length){
     var inp=guestInputQueue.shift();
-    if(!p2) continue;
+    if(!p2||!p1) continue;
     if(inp.type==='move'){
       p2.walkDir=inp.dir;
-      if(inp.dir===-1&&p2.x>p1.x+70) p2.x-=2.5;
-      if(inp.dir===1&&p2.x<W-70)      p2.x+=2.5;
+      if(inp.dir===1  && p2.x > p1.x+70) p2.x -= 2.5;
+      if(inp.dir===-1 && p2.x < W-70)    p2.x += 2.5;
     } else if(inp.type==='attack'){
       doAtk(p2,p1,inp.attack);
     } else if(inp.type==='block'){
@@ -913,6 +912,7 @@ function processGuestInputs(){
 function applyNetworkState(ns){
   if(!ns||!p1||!p2) return;
   var fp=ns.p1, fg=ns.p2;
+  // Apply host's authoritative positions for both fighters
   p1.x=fp.x;p1.hp=fp.hp;p1.stamina=fp.stamina;p1.state=fp.state;
   p1.leadHand=fp.leadHand;p1.blocking=fp.blocking;
   p1.bobPhase=fp.bobPhase;p1.legPhase=fp.legPhase;p1.walkDir=fp.walkDir;
@@ -926,7 +926,9 @@ function applyNetworkState(ns){
   if(ns.score) document.getElementById('hudScr').textContent=ns.score[0]+' - '+ns.score[1];
   if(ns.particles) particles=ns.particles;
   if(ns.effects)   effects=ns.effects;
-  updateBars();
+  // Guest HP bars: p2 is the guest's fighter, show their bar on the left of HUD
+  document.getElementById('hf1').style.width=Math.max(0,p2.hp)+'%';
+  document.getElementById('hf2').style.width=Math.max(0,p1.hp)+'%';
 }
 
 function guestSendInput(type,data){
@@ -987,21 +989,33 @@ function makeFighter(x,isCPU){
 
 /* ── INPUT ── */
 var K={};
+
+// Returns the fighter this client controls
+function myFighter(){ return (onlineMode && !isHost) ? p2 : p1; }
+// Returns the opponent fighter
+function oppFighter(){ return (onlineMode && !isHost) ? p1 : p2; }
+
 document.addEventListener('keydown',function(e){
   if(K[e.code])return;
   K[e.code]=true;
   if(e.code==='Space')e.preventDefault();
-  if(!gameActive||!p1)return;
+  if(!gameActive)return;
   if(e.code==='Space'){
-    p1.blocking=true;
-    if(onlineMode&&!isHost) guestSendInput('block',{val:true});
+    var me=myFighter();
+    if(me){
+      if(onlineMode&&!isHost){ guestSendInput('block',{val:true}); }
+      else { me.blocking=true; }
+    }
   }
 });
 document.addEventListener('keyup',function(e){
   K[e.code]=false;
-  if(e.code==='Space'&&p1){
-    p1.blocking=false;
-    if(onlineMode&&!isHost) guestSendInput('block',{val:false});
+  if(e.code==='Space'){
+    var me=myFighter();
+    if(me){
+      if(onlineMode&&!isHost){ guestSendInput('block',{val:false}); }
+      else { me.blocking=false; }
+    }
   }
 });
 canvas.addEventListener('mousedown',function(e){
@@ -1027,25 +1041,43 @@ function wireBtn(id,dn,up){
 }
 wireBtn('bjab',function(){
   if(!gameActive)return;
-  if(onlineMode&&!isHost){guestSendInput('attack',{attack:'jab'});}
-  else doAtk(p1,p2,'jab');
+  if(onlineMode&&!isHost){ guestSendInput('attack',{attack:'jab'}); }
+  else { doAtk(p1,p2,'jab'); }
 });
 wireBtn('bheavy',function(){
   if(!gameActive)return;
-  if(onlineMode&&!isHost){guestSendInput('attack',{attack:'heavy'});}
-  else doAtk(p1,p2,'heavy');
+  if(onlineMode&&!isHost){ guestSendInput('attack',{attack:'heavy'}); }
+  else { doAtk(p1,p2,'heavy'); }
 });
 wireBtn('bblock',
-  function(){if(p1){p1.blocking=true;if(onlineMode&&!isHost)guestSendInput('block',{val:true});}},
-  function(){if(p1){p1.blocking=false;if(onlineMode&&!isHost)guestSendInput('block',{val:false});}}
+  function(){
+    if(onlineMode&&!isHost){ guestSendInput('block',{val:true}); }
+    else if(p1){ p1.blocking=true; }
+  },
+  function(){
+    if(onlineMode&&!isHost){ guestSendInput('block',{val:false}); }
+    else if(p1){ p1.blocking=false; }
+  }
 );
 wireBtn('dleft',
-  function(){K['KeyA']=true;if(onlineMode&&!isHost)guestSendInput('move',{dir:-1});},
-  function(){K['KeyA']=false;if(onlineMode&&!isHost)guestSendInput('move',{dir:0});}
+  function(){
+    K['KeyA']=true;
+    if(onlineMode&&!isHost) guestSendInput('move',{dir:1}); // guest moves left = toward p1
+  },
+  function(){
+    K['KeyA']=false;
+    if(onlineMode&&!isHost) guestSendInput('move',{dir:0});
+  }
 );
 wireBtn('dright',
-  function(){K['KeyD']=true;if(onlineMode&&!isHost)guestSendInput('move',{dir:1});},
-  function(){K['KeyD']=false;if(onlineMode&&!isHost)guestSendInput('move',{dir:0});}
+  function(){
+    K['KeyD']=true;
+    if(onlineMode&&!isHost) guestSendInput('move',{dir:-1}); // guest moves right = away
+  },
+  function(){
+    K['KeyD']=false;
+    if(onlineMode&&!isHost) guestSendInput('move',{dir:0});
+  }
 );
 
 /* ── ATTACK ── */
@@ -1381,9 +1413,21 @@ function drawKOText(){
 }
 
 /* ── UPDATE ── */
+var guestLastDir=0;
 function update(){
   if(!p1||!p2)return;
-  if(onlineMode&&!isHost) return;
+
+  if(onlineMode&&!isHost){
+    // Guest: send keyboard movement to host each frame direction changes
+    var wantDir=0;
+    if(K['KeyA']||K['ArrowLeft'])  wantDir=1;   // toward p1 = left key
+    if(K['KeyD']||K['ArrowRight']) wantDir=-1;  // away from p1 = right key
+    if(wantDir!==guestLastDir){
+      guestLastDir=wantDir;
+      guestSendInput('move',{dir:wantDir});
+    }
+    return;
+  }
 
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
     p1.walkDir=0;
