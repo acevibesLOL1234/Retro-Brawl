@@ -865,7 +865,17 @@ function startOnlineGame(){
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('gameWrapper').classList.add('active');
 
-  // HOST=p1(left/red), GUEST=p2(right/blue) — set correct name on HUD
+  startGame();
+
+  // After startGame creates fighters, apply correct colours
+  // HOST = p1 (their equipped shorts), GUEST = p2 (their equipped shorts)
+  if(!isHost && p2){
+    var myCols=getEquippedColors();
+    p2.shortCol1=myCols[0];
+    p2.shortCol2=myCols[1];
+  }
+
+  // HUD names: your name on left bar, opponent on right
   if(isHost){
     document.getElementById('p1HudName').textContent=player.name;
     document.getElementById('p2HudName').textContent=opponentName;
@@ -873,8 +883,6 @@ function startOnlineGame(){
     document.getElementById('p1HudName').textContent=opponentName;
     document.getElementById('p2HudName').textContent=player.name;
   }
-
-  startGame();
 }
 
 /* My fighter reference (host=p1, guest=p2) */
@@ -916,10 +924,17 @@ function getEquippedColors(){
   return s.colors;
 }
 
-function makeFighter(x,isCPU){
-  var cols=isCPU?['#1133cc','#001888']:getEquippedColors();
+function makeFighter(x,isCPU,isP2Online){
+  // isCPU      = real CPU (vs computer mode)
+  // isP2Online = human player 2 in online mode (faces left like CPU, but is a human fighter)
+  var cols;
+  if(isCPU)        cols=['#1133cc','#001888']; // CPU blue
+  else if(isP2Online) cols=['#1133cc','#001888']; // P2 online uses blue (opponent's colour shown on host)
+  else             cols=getEquippedColors();    // local player uses their equipped shorts
   return {
-    x:x,isCPU:isCPU,
+    x:x,
+    isCPU:isCPU,
+    isP2Online:isP2Online||false,
     hp:100,stamina:100,
     state:'idle',stateTimer:0,
     punchCD:0,stunned:0,hurtFlash:0,
@@ -1134,11 +1149,15 @@ function drawGlove(cx2,cy2,w,h,col,shd,impact,isLead){
 function drawFighter(f){
   if(!f)return;
   var cx2=Math.round(f.x),cy2=GROUND;
-  var cpu=f.isCPU,dir=cpu?-1:1;
+  var cpu=f.isCPU;
+  // p2 online is a human on the right side - faces left like CPU but looks human
+  var facesLeft=cpu||f.isP2Online;
+  var dir=facesLeft?-1:1;
   var isKO=f.state==='ko',isHurt=f.state==='hurt';
   var isJab=f.state==='jab',isHeavy=f.state==='heavy',isBlk=f.blocking;
   var lead=f.leadHand;
 
+  // CPU has distinct darker look; human p2 online looks like a human fighter
   var skin=cpu?'#c07030':'#e89050';
   var skinD=cpu?'#9a5018':'#c06828';
   var t1=f.shortCol1,t2=f.shortCol2;
@@ -1440,10 +1459,8 @@ function startGame(){
 
 function beginRound(){
   p1=makeFighter(160,false);
-  p2=makeFighter(480,true);
-  if(onlineMode){
-    p2.shortCol1='#1133cc';p2.shortCol2='#001888';
-  }
+  // In online mode p2 is a human opponent - not CPU
+  p2=onlineMode ? makeFighter(480,false,true) : makeFighter(480,true);
   updateBars();
   document.getElementById('rndTxt').textContent='ROUND '+round;
   document.getElementById('tmr').textContent='99';
