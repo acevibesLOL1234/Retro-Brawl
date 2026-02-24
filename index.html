@@ -476,11 +476,32 @@ async function doLogin(){
   var email=document.getElementById('loginEmail').value.trim();
   var pass=document.getElementById('loginPass').value;
   var err=document.getElementById('loginErr');
+  if(!email||!pass){err.textContent='ENTER EMAIL AND PASSWORD!';return;}
   err.textContent='LOGGING IN...';
   try{
     var res=await sb.auth.signInWithPassword({email:email,password:pass});
-    if(res.error){err.textContent=res.error.message.toUpperCase();return;}
-    await loadProfile(res.data.user.id);
+    if(res.error){
+      var msg=res.error.message.toUpperCase();
+      // Common error translations
+      if(msg.includes('INVALID LOGIN')||msg.includes('INVALID CREDENTIALS'))
+        msg='WRONG EMAIL OR PASSWORD!';
+      if(msg.includes('EMAIL NOT CONFIRMED'))
+        msg='CHECK YOUR EMAIL TO CONFIRM!';
+      err.textContent=msg;
+      return;
+    }
+    var uid=res.data.user.id;
+    var loaded=await loadProfile(uid);
+    if(!loaded){
+      // First login after email confirmation - grab the name they chose at signup
+      var savedName=(localStorage.getItem('pendingFighterName')||'FIGHTER').toUpperCase().slice(0,10);
+      localStorage.removeItem('pendingFighterName');
+      var defProfile={id:uid,name:savedName,tc:100,
+        owned_shorts:['default'],equipped_shorts:'default',
+        wins:0,losses:0,kos:0,rounds:0,total_tc:100,history:[]};
+      await sb.from('fighters').upsert(defProfile);
+      await loadProfile(uid);
+    }
     showScreen('menuScreen');updateMenuUI();
   }catch(e){err.textContent='ERROR: '+e.message;}
 }
@@ -492,36 +513,52 @@ async function doSignup(){
   var pass=document.getElementById('signupPass').value;
   var err=document.getElementById('signupErr');
   if(!name){err.textContent='ENTER A FIGHTER NAME!';return;}
+  if(!email){err.textContent='ENTER YOUR EMAIL!';return;}
+  if(pass.length<6){err.textContent='PASSWORD MIN 6 CHARS!';return;}
   err.textContent='CREATING ACCOUNT...';
   try{
     var res=await sb.auth.signUp({email:email,password:pass});
     if(res.error){err.textContent=res.error.message.toUpperCase();return;}
+    // Store the chosen name in localStorage so we can save it after email confirmation
+    localStorage.setItem('pendingFighterName', name);
+    // Supabase returns user but identities=[] when email confirmation is required
+    var needsConfirm = !res.data.user || (res.data.user.identities && res.data.user.identities.length===0);
+    if(needsConfirm){
+      err.className='msg-line msg-ok';
+      err.textContent='CHECK YOUR EMAIL AND CLICK THE CONFIRMATION LINK, THEN COME BACK AND LOG IN!';
+      return;
+    }
+    // Email confirmation OFF - log in immediately
     var uid=res.data.user.id;
     var defProfile={id:uid,name:name,tc:100,
       owned_shorts:['default'],equipped_shorts:'default',
       wins:0,losses:0,kos:0,rounds:0,total_tc:100,history:[]};
-    await sb.from('fighters').insert(defProfile);
+    await sb.from('fighters').upsert(defProfile);
     await loadProfile(uid);
     showScreen('menuScreen');updateMenuUI();
   }catch(e){err.textContent='ERROR: '+e.message;}
 }
 
 async function loadProfile(uid){
-  var res=await sb.from('fighters').select('*').eq('id',uid).single();
-  if(res.data){
-    player.id=uid;
-    player.name=res.data.name||'FIGHTER';
-    player.tc=res.data.tc||0;
-    player.ownedShorts=res.data.owned_shorts||['default'];
-    player.equippedShorts=res.data.equipped_shorts||'default';
-    player.isGuest=false;
-    player.stats={
-      wins:res.data.wins||0, losses:res.data.losses||0,
-      kos:res.data.kos||0,   rounds:res.data.rounds||0,
-      totalTC:res.data.total_tc||0
-    };
-    player.history=res.data.history||[];
-  }
+  try{
+    var res=await sb.from('fighters').select('*').eq('id',uid).single();
+    if(res.data){
+      player.id=uid;
+      player.name=res.data.name||'FIGHTER';
+      player.tc=res.data.tc||0;
+      player.ownedShorts=res.data.owned_shorts||['default'];
+      player.equippedShorts=res.data.equipped_shorts||'default';
+      player.isGuest=false;
+      player.stats={
+        wins:res.data.wins||0, losses:res.data.losses||0,
+        kos:res.data.kos||0,   rounds:res.data.rounds||0,
+        totalTC:res.data.total_tc||0
+      };
+      player.history=res.data.history||[];
+      return true;
+    }
+  }catch(e){}
+  return false;
 }
 
 async function saveProfile(){
@@ -795,6 +832,32 @@ function subscribeToRoom(code){
     setTimeout(function(){startOnlineGame();},600);
   });
 
+  // Rematch request
+  realtimeChannel.on('broadcast',{event:'rematch'},function(payload){
+    if(rematchWanted){
+      // Both want rematch - start a new game!
+      if(rematchTimeout) clearTimeout(rematchTimeout);
+      rematchWanted=false;
+      document.getElementById('goMainBtn').style.display='';
+      document.getElementById('gameOverlay').classList.remove('show');
+      netOppKeys={left:false,right:false,block:false};
+      netOppAttack=null;
+      lastSentKeys={l:false,r:false,b:false};
+      startGame();
+    } else {
+      // Opponent wants rematch - show prompt to accept
+      var d=payload.payload;
+      document.getElementById('goTitle').textContent=(d.name||'OPPONENT')+'\nWANTS REMATCH!';
+      document.getElementById('goMainBtn').textContent='ACCEPT!';
+      document.getElementById('goMainBtn').style.display='';
+      // Override the next button click to accept
+      document.getElementById('goMainBtn').onclick=function(){
+        document.getElementById('goMainBtn').onclick=function(){G.overlayNext();};
+        sendRematchRequest();
+      };
+    }
+  });
+
   // Receive opponent input state (sent every frame by opponent)
   realtimeChannel.on('broadcast',{event:'inp'},function(payload){
     var d=payload.payload;
@@ -891,15 +954,38 @@ function myF(){ return isHost?p1:p2; }
 function oppF(){ return isHost?p2:p1; }
 
 /* ── ONLINE GAME OVER ── */
+var rematchWanted=false;
+var rematchTimeout=null;
+
 function handleOnlineGameOver(won,ko){
   gameActive=false;clearInterval(timerID);
-  var earned=won?60:5;
+  var earned=won?(50+round*15):Math.max(2,round*3);
   player.tc+=earned;
   if(won)player.stats.wins++;else player.stats.losses++;
   player.history.unshift({result:won?'win':'loss',opponent:opponentName,rounds:round,ko:ko,tc:earned});
   saveProfile();
-  showGameOverlay((won?'YOU WIN!\n':'YOU LOSE!\n')+'\n+'+earned+' TC');
-  document.getElementById('goMainBtn').textContent='MAIN MENU';
+  rematchWanted=false;
+  var title=(won?'YOU WIN!':'YOU LOSE!')+'\n+'+earned+' TC';
+  showGameOverlay(title,'REMATCH?',function(){sendRematchRequest();});
+  document.getElementById('goMainBtn').textContent='REMATCH?';
+}
+
+function sendRematchRequest(){
+  if(!realtimeChannel) return;
+  rematchWanted=true;
+  document.getElementById('goTitle').textContent='WAITING FOR\nOPPONENT...';
+  document.getElementById('goMainBtn').style.display='none';
+  realtimeChannel.send({type:'broadcast',event:'rematch',payload:{name:player.name}});
+  // Auto-cancel after 15s
+  if(rematchTimeout) clearTimeout(rematchTimeout);
+  rematchTimeout=setTimeout(function(){
+    if(rematchWanted){
+      rematchWanted=false;
+      document.getElementById('goTitle').textContent='REMATCH\nTIMED OUT';
+      document.getElementById('goMainBtn').style.display='';
+      document.getElementById('goMainBtn').textContent='MAIN MENU';
+    }
+  },15000);
 }
 
 /* ══════════════════════════════════════════════════════════════
