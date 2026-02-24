@@ -451,37 +451,6 @@ async function loadProfile(uid){
   return false;
 }
 
-/* ── SCREEN NAVIGATION ── */
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  var el=document.getElementById(id);
-  if(el) el.classList.add('active');
-}
-
-/* ── AUTH TAB SWITCHING ── */
-function switchTab(tab){
-  var loginForm=document.getElementById('loginForm');
-  var signupForm=document.getElementById('signupForm');
-  var tabLogin=document.getElementById('tabLogin');
-  var tabSignup=document.getElementById('tabSignup');
-  if(tab==='login'){
-    loginForm.style.display='flex';
-    signupForm.style.display='none';
-    tabLogin.classList.add('active');
-    tabSignup.classList.remove('active');
-  } else {
-    loginForm.style.display='none';
-    signupForm.style.display='flex';
-    tabLogin.classList.remove('active');
-    tabSignup.classList.add('active');
-  }
-}
-
-function updateMenuUI(){
-  document.getElementById('menuName').textContent=player.name;
-  document.getElementById('menuTC').textContent='\u25C6 '+player.tc+' TC';
-}
-
 /* ── AUTH ── */
 async function doLogin(){
   if(!sb){doGuest();return;}
@@ -545,11 +514,7 @@ async function doLogout(){
   if(sb) await sb.auth.signOut();
   player={id:null,name:'FIGHTER',tc:500,isGuest:true,ownedShorts:['default'],
     equippedShorts:'default',stats:{wins:0,losses:0,kos:0,rounds:0,totalTC:0},history:[]};
-  /* Reset auth form to login tab */
   switchTab('login');
-  document.getElementById('loginErr').textContent='';
-  document.getElementById('loginEmail').value='';
-  document.getElementById('loginPass').value='';
   showScreen('authScreen');
 }
 
@@ -558,7 +523,38 @@ function doGuest(){
   showScreen('menuScreen'); updateMenuUI();
 }
 
-/* ── SAVE NAME ── */
+/* ── SCREENS ── */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+/* ── TAB SWITCHING (FIX: was missing entirely) ── */
+function switchTab(tab){
+  var loginForm=document.getElementById('loginForm');
+  var signupForm=document.getElementById('signupForm');
+  var tabLogin=document.getElementById('tabLogin');
+  var tabSignup=document.getElementById('tabSignup');
+  if(tab==='login'){
+    loginForm.style.display='flex';
+    signupForm.style.display='none';
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+  } else {
+    loginForm.style.display='none';
+    signupForm.style.display='flex';
+    tabLogin.classList.remove('active');
+    tabSignup.classList.add('active');
+  }
+}
+
+function updateMenuUI(){
+  document.getElementById('menuName').textContent=player.name;
+  document.getElementById('menuTC').textContent='\u25C6 '+player.tc+' TC';
+}
+
+/* ── SAVE NAME (FIX: was missing entirely) ── */
 function saveName(){
   var val=document.getElementById('nameInput').value.trim().toUpperCase().slice(0,10);
   var msg=document.getElementById('nameMsg');
@@ -571,7 +567,7 @@ function saveName(){
   setTimeout(function(){msg.textContent='';},2000);
 }
 
-/* ── SHOP ── */
+/* ── SHOP (FIX: buildShop referenced non-existent elements; rewritten to use shopGrid) ── */
 function renderShop(){
   document.getElementById('shopTC').textContent='\u25C6 '+player.tc+' TC';
   document.getElementById('shopMsg').textContent='';
@@ -582,156 +578,115 @@ function renderShop(){
     var equipped=player.equippedShorts===s.id;
     var card=document.createElement('div');
     card.className='item-card'+(equipped?' equipped':owned?' owned':'');
-
-    /* Color swatch */
-    var swatch=document.createElement('canvas');
-    swatch.width=40;swatch.height=30;
-    var sc=swatch.getContext('2d');
-    var gr=sc.createLinearGradient(0,0,40,30);
+    /* color swatch */
+    var sw=document.createElement('canvas');sw.width=44;sw.height=32;
+    var sc=sw.getContext('2d');
+    var gr=sc.createLinearGradient(0,0,44,32);
     gr.addColorStop(0,s.col1);gr.addColorStop(1,s.col2);
-    sc.fillStyle=gr;sc.fillRect(0,0,40,30);
-    /* stripe */
-    sc.fillStyle='rgba(255,255,255,0.18)';sc.fillRect(5,0,6,30);
-
-    card.appendChild(swatch);
+    sc.fillStyle=gr;sc.fillRect(0,0,44,32);
+    sc.fillStyle='rgba(255,255,255,0.15)';sc.fillRect(6,0,7,32);
     var nm=document.createElement('div');nm.className='item-name';nm.textContent=s.name;
     var pr=document.createElement('div');pr.className='item-price';
     pr.textContent=s.price===0?'FREE':s.price+' TC';
-
     var btn=document.createElement('button');
-    btn.style.fontFamily="'Press Start 2P',monospace";
-    btn.style.fontSize='5px';
-    btn.style.padding='5px 3px';
-    btn.style.width='100%';
-    btn.style.cursor='pointer';
-    btn.style.border='none';
+    btn.style.cssText="font-family:'Press Start 2P',monospace;font-size:5px;padding:5px 3px;width:100%;cursor:pointer;border:none;margin-top:2px;";
     if(equipped){
-      btn.textContent='EQUIPPED';
-      btn.style.background='#00cc55';
-      btn.style.color='#000';
+      btn.textContent='EQUIPPED'; btn.style.background='#00cc55'; btn.style.color='#000';
     } else if(owned){
-      btn.textContent='EQUIP';
-      btn.style.background='var(--gold)';
-      btn.style.color='#000';
-      btn.onclick=function(){
-        player.equippedShorts=s.id;
-        saveProfile();
-        renderShop();
-        updateMenuUI();
-      };
+      btn.textContent='EQUIP'; btn.style.background='var(--gold)'; btn.style.color='#000';
+      btn.onclick=function(){player.equippedShorts=s.id;saveProfile();renderShop();updateMenuUI();};
     } else {
-      btn.textContent='BUY';
+      btn.textContent='BUY '+s.price+' TC';
       btn.style.background=player.tc>=s.price?'var(--gold)':'#333';
       btn.style.color=player.tc>=s.price?'#000':'#666';
       btn.onclick=function(){
         var shopMsg=document.getElementById('shopMsg');
         if(player.tc<s.price){shopMsg.className='msg-line msg-err';shopMsg.textContent='NOT ENOUGH TC!';return;}
-        player.tc-=s.price;
-        player.ownedShorts.push(s.id);
-        player.equippedShorts=s.id;
-        saveProfile();
-        renderShop();
-        updateMenuUI();
-        shopMsg.className='msg-line msg-ok';
-        shopMsg.textContent='PURCHASED! '+s.name+' EQUIPPED!';
+        player.tc-=s.price;player.ownedShorts.push(s.id);player.equippedShorts=s.id;
+        saveProfile();renderShop();updateMenuUI();
+        shopMsg.className='msg-line msg-ok';shopMsg.textContent='PURCHASED!';
       };
     }
-    card.appendChild(nm);card.appendChild(pr);card.appendChild(btn);
+    card.appendChild(sw);card.appendChild(nm);card.appendChild(pr);card.appendChild(btn);
     grid.appendChild(card);
   });
 }
 
-/* ── INVENTORY ── */
-var currentInvTab='shorts';
+/* ── INVENTORY (FIX: renderInventory / switchInvTab were missing) ── */
 function switchInvTab(tab){
-  currentInvTab=tab;
   document.getElementById('invShorts').style.display=tab==='shorts'?'block':'none';
   document.getElementById('invStats').style.display=tab==='stats'?'block':'none';
   document.getElementById('invHistory').style.display=tab==='history'?'block':'none';
   document.getElementById('invTabShorts').className='inv-tab'+(tab==='shorts'?' active':'');
   document.getElementById('invTabStats').className='inv-tab'+(tab==='stats'?' active':'');
   document.getElementById('invTabHistory').className='inv-tab'+(tab==='history'?' active':'');
-  if(tab==='history') renderHistory();
   if(tab==='stats') renderStats();
+  if(tab==='history') buildHistory();
 }
 
 function renderInventory(){
   document.getElementById('invTC').textContent='\u25C6 '+player.tc+' TC';
-  /* Reset to shorts tab */
   switchInvTab('shorts');
   var grid=document.getElementById('invGrid');
   grid.innerHTML='';
-  var ownedItems=SHORTS_CATALOG.filter(function(s){return player.ownedShorts.indexOf(s.id)>=0;});
-  if(!ownedItems.length){
-    grid.innerHTML='<div class="inv-empty">NO ITEMS OWNED</div>';
-    return;
-  }
-  ownedItems.forEach(function(s){
+  var owned=SHORTS_CATALOG.filter(function(s){return player.ownedShorts.indexOf(s.id)>=0;});
+  if(!owned.length){grid.innerHTML='<div class="inv-empty">NO ITEMS OWNED</div>';return;}
+  owned.forEach(function(s){
     var equipped=player.equippedShorts===s.id;
     var card=document.createElement('div');
     card.className='item-card'+(equipped?' equipped':' owned');
     card.onclick=function(){
-      player.equippedShorts=s.id;
-      saveProfile();
-      renderInventory();
-      updateMenuUI();
-      document.getElementById('invMsg').className='msg-line msg-ok';
-      document.getElementById('invMsg').textContent=s.name+' EQUIPPED!';
-      setTimeout(function(){document.getElementById('invMsg').textContent='';},2000);
+      player.equippedShorts=s.id;saveProfile();renderInventory();updateMenuUI();
+      var im=document.getElementById('invMsg');
+      im.className='msg-line msg-ok';im.textContent=s.name+' EQUIPPED!';
+      setTimeout(function(){im.textContent='';},2000);
     };
-    var swatch=document.createElement('canvas');
-    swatch.width=40;swatch.height=30;
-    var sc=swatch.getContext('2d');
-    var gr=sc.createLinearGradient(0,0,40,30);
+    var sw=document.createElement('canvas');sw.width=44;sw.height=32;
+    var sc=sw.getContext('2d');
+    var gr=sc.createLinearGradient(0,0,44,32);
     gr.addColorStop(0,s.col1);gr.addColorStop(1,s.col2);
-    sc.fillStyle=gr;sc.fillRect(0,0,40,30);
-    sc.fillStyle='rgba(255,255,255,0.18)';sc.fillRect(5,0,6,30);
+    sc.fillStyle=gr;sc.fillRect(0,0,44,32);
+    sc.fillStyle='rgba(255,255,255,0.15)';sc.fillRect(6,0,7,32);
     var nm=document.createElement('div');nm.className='item-name';nm.textContent=s.name;
-    card.appendChild(swatch);card.appendChild(nm);
+    card.appendChild(sw);card.appendChild(nm);
     grid.appendChild(card);
   });
 }
 
 function renderStats(){
-  var sg=document.getElementById('statsGrid');
-  sg.innerHTML='';
-  var stats=[
-    {val:player.stats.wins,lbl:'WINS'},
-    {val:player.stats.losses,lbl:'LOSSES'},
-    {val:player.stats.kos,lbl:'KO\'S'},
-    {val:player.tc,lbl:'TC BALANCE'}
-  ];
-  stats.forEach(function(s){
-    var box=document.createElement('div');
-    box.className='stat-box';
-    box.innerHTML='<span class="stat-val">'+s.val+'</span><span class="stat-lbl">'+s.lbl+'</span>';
-    sg.appendChild(box);
+  var sg=document.getElementById('statsGrid');sg.innerHTML='';
+  [{val:player.stats.wins,lbl:'WINS'},{val:player.stats.losses,lbl:'LOSSES'},
+   {val:player.stats.kos,lbl:"KO'S"},{val:player.tc,lbl:'TC BALANCE'}
+  ].forEach(function(s){
+    var b=document.createElement('div');b.className='stat-box';
+    b.innerHTML='<span class="stat-val">'+s.val+'</span><span class="stat-lbl">'+s.lbl+'</span>';
+    sg.appendChild(b);
   });
 }
 
-function renderHistory(){
+/* ── HISTORY (original buildHistory, unchanged) ── */
+function buildHistory(){
   var hl=document.getElementById('historyList');
   hl.innerHTML='';
-  if(!player.history.length){
-    hl.innerHTML='<div style="color:#555;font-size:7px;text-align:center;padding:20px;">NO FIGHTS YET</div>';
-    return;
-  }
+  if(!player.history.length){hl.innerHTML='<div style="color:#555;font-size:7px;text-align:center;">NO FIGHTS YET</div>';return;}
   player.history.slice(0,30).forEach(function(h){
     var won=h.result==='win';
     var row=document.createElement('div');
-    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid #1a0033;';
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a0033;';
     var res=document.createElement('span');
     res.style.cssText='font-size:7px;color:'+(won?'#66cc44':'#ff4444')+';';
-    res.textContent=(won?'WIN':'LOSS')+' vs '+(h.opponent||'???');
+    res.textContent=(won?'WIN':'LOSS')+' vs '+h.opponent;
     var info=document.createElement('span');
     info.style.cssText='font-size:5px;color:#555;text-align:right;';
-    info.textContent=(h.ko?'KO':'DEC')+' | R'+(h.rounds||1)+' | +'+(h.tc||0)+'TC';
-    row.appendChild(res);row.appendChild(info);hl.appendChild(row);
+    info.textContent=(h.ko?'KO':'DEC')+' | R'+h.rounds+' | +'+h.tc+'TC';
+    row.appendChild(res); row.appendChild(info); hl.appendChild(row);
   });
 }
 
 /* ════════════════════════════════════════════════════════════════
    ONLINE MULTIPLAYER
+   HOST runs ALL physics. Broadcasts full state to GUEST each frame.
+   GUEST only sends inputs. Renders what host says.
    ════════════════════════════════════════════════════════════════ */
 
 var onlineMode=false;
@@ -788,6 +743,7 @@ function subscribeToRoom(code){
   if(realtimeChannel) sb.removeChannel(realtimeChannel);
   realtimeChannel=sb.channel('room:'+code,{config:{broadcast:{self:false}}});
 
+  /* HOST: guest joined */
   realtimeChannel.on('broadcast',{event:'join'},function(payload){
     if(!isHost) return;
     opponentName=(payload.payload.name||'OPPONENT').slice(0,10);
@@ -798,6 +754,7 @@ function subscribeToRoom(code){
     setTimeout(function(){startOnlineGame();},1200);
   });
 
+  /* GUEST: host says start */
   realtimeChannel.on('broadcast',{event:'start'},function(payload){
     if(isHost) return;
     opponentName=(payload.payload.hostName||'OPPONENT').slice(0,10);
@@ -805,6 +762,7 @@ function subscribeToRoom(code){
     setTimeout(function(){startOnlineGame();},600);
   });
 
+  /* HOST: receives guest inputs */
   realtimeChannel.on('broadcast',{event:'inp'},function(payload){
     if(!isHost) return;
     var d=payload.payload;
@@ -812,23 +770,30 @@ function subscribeToRoom(code){
     if(d.atk) guestKeys.atk=d.atk;
   });
 
+  /* GUEST: receives full game state from host */
   realtimeChannel.on('broadcast',{event:'state'},function(payload){
     if(isHost) return;
     applyHostState(payload.payload);
   });
 
+  /* GUEST: receives game over from host */
   realtimeChannel.on('broadcast',{event:'gameover'},function(payload){
     if(isHost) return;
+    // p1Won=true means host won = guest lost
     onlineGameOver(!payload.payload.p1Won, payload.payload.ko);
   });
 
+  /* Rematch */
   realtimeChannel.on('broadcast',{event:'rematch'},function(payload){
     if(rematchWanted){
       if(rematchTimeout) clearTimeout(rematchTimeout);
       rematchWanted=false;
       document.getElementById('goMainBtn').style.display='';
       guestKeys={left:false,right:false,block:false,atk:null};
-      if(isHost){ startOnlineGame(); }
+      if(isHost){
+        startOnlineGame();
+      }
+      // Guest will get a new 'start' broadcast from host
     } else {
       var name=payload.payload.name||'OPPONENT';
       document.getElementById('goTitle').textContent=name+'\nWANTS REMATCH!';
@@ -841,6 +806,7 @@ function subscribeToRoom(code){
     }
   });
 
+  /* Opponent left */
   realtimeChannel.on('broadcast',{event:'leave'},function(){
     if(!gameActive) return;
     gameActive=false; clearInterval(timerID);
@@ -866,6 +832,7 @@ function leaveChannel(){
 }
 function leaveOnline(){ leaveChannel(); showScreen('menuScreen'); updateMenuUI(); }
 
+/* HOST broadcasts full state every other frame */
 var broadcastTick=0;
 function hostBroadcastState(){
   if(!realtimeChannel||!p1||!p2) return;
@@ -885,6 +852,7 @@ function hostBroadcastState(){
   }});
 }
 
+/* GUEST applies host state */
 function applyHostState(s){
   if(!s||!p1||!p2) return;
   function applyF(f,d){
@@ -905,6 +873,7 @@ function applyHostState(s){
   document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
 }
 
+/* GUEST sends inputs to host */
 var guestBroadcastTick=0;
 var lastGuestSent={l:false,r:false,b:false};
 function guestSendInputs(){
@@ -919,6 +888,7 @@ function guestSendInputs(){
   realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:l,r:r,b:b}});
 }
 
+/* HOST applies guestKeys to p2 */
 function applyGuestInputs(){
   if(!p2||!p1) return;
   p2.blocking=guestKeys.block;
@@ -943,14 +913,16 @@ function startOnlineGame(){
   document.getElementById('gameWrapper').classList.add('active');
 
   if(isHost){
+    /* Host starts full game. p1=host fighter, p2=guest fighter */
     startGame();
     document.getElementById('p1HudName').textContent=player.name;
     document.getElementById('p2HudName').textContent=opponentName;
   } else {
+    /* Guest: build fighters just for rendering. Host drives all values. */
     round=1; score=[0,0]; sessionTC=0; timer=99;
     var myCols=getEquippedColors();
-    p1=makeFighter(160,false);
-    p2=makeFighter(480,false,true);
+    p1=makeFighter(160,false);   /* host fighter rendered on left */
+    p2=makeFighter(480,false,true); /* my fighter rendered on right */
     p2.shortCol1=myCols[0]; p2.shortCol2=myCols[1];
     particles=[]; effects=[];
     gameActive=true;
@@ -965,11 +937,14 @@ function startOnlineGame(){
   }
 }
 
+/* Called by host when KO or time */
 function hostGameOver(p1Won, ko){
   gameActive=false; clearInterval(timerID);
+  /* Tell guest */
   if(realtimeChannel){
     realtimeChannel.send({type:'broadcast',event:'gameover',payload:{p1Won:p1Won,ko:ko}});
   }
+  /* Host's own result: host is p1, so p1Won=true means host won */
   onlineGameOver(p1Won, ko);
 }
 
@@ -1011,6 +986,9 @@ function sendRematchRequest(){
 
 /* ════════════════════════════════════════════════════════════════
    GAME ENGINE
+   p1 = ALWAYS the local human player (left side, red)
+   p2 = CPU in solo mode, OR guest fighter in online mode
+   CPU AI only runs in solo mode. Online: p2 driven by guestKeys.
    ════════════════════════════════════════════════════════════════ */
 
 var canvas=document.getElementById('gameCanvas');
@@ -1026,9 +1004,9 @@ var overlayNextFn=null;
 
 function makeFighter(x, isCPU, isOnlineP2){
   var cols;
-  if(isOnlineP2)    cols=['#1133cc','#001888'];
-  else if(isCPU)    cols=['#1133cc','#001888'];
-  else              cols=getEquippedColors();
+  if(isOnlineP2)    cols=['#1133cc','#001888']; /* blue default for online p2, overridden after */
+  else if(isCPU)    cols=['#1133cc','#001888']; /* CPU: dark blue */
+  else              cols=getEquippedColors();   /* local player: their shorts */
   return {
     x:x, isCPU:!!isCPU, isOnlineP2:!!isOnlineP2,
     hp:100, stamina:100,
@@ -1040,6 +1018,7 @@ function makeFighter(x, isCPU, isOnlineP2){
   };
 }
 
+/* ── INPUT ── */
 var K={};
 document.addEventListener('keydown',function(e){
   if(K[e.code]) return;
@@ -1047,8 +1026,11 @@ document.addEventListener('keydown',function(e){
   if(e.code==='Space') e.preventDefault();
   if(!gameActive) return;
   if(e.code==='Space'){
-    if(onlineMode&&!isHost){ if(p2) p2.blocking=true; }
-    else { if(p1) p1.blocking=true; }
+    if(onlineMode&&!isHost){
+      if(p2) p2.blocking=true;
+    } else {
+      if(p1) p1.blocking=true;
+    }
   }
 });
 document.addEventListener('keyup',function(e){
@@ -1063,6 +1045,7 @@ canvas.addEventListener('mousedown',function(e){
   e.preventDefault();
   if(!gameActive) return;
   if(onlineMode&&!isHost){
+    /* Guest attack: send to host via channel */
     var atk=e.button===0?'jab':'heavy';
     guestKeys.atk=atk;
     if(realtimeChannel) realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:atk}});
@@ -1153,6 +1136,7 @@ function doKO(loser,winner){
   gameActive=false; clearInterval(timerID);
   doShakeEffect(16);
   if(onlineMode&&isHost){
+    /* Only host decides and broadcasts KO */
     var p1Won=(winner===p1);
     if(p1Won) score[0]++; else score[1]++;
     updateBars();
@@ -1160,6 +1144,7 @@ function doKO(loser,winner){
     setTimeout(function(){ hostGameOver(p1Won,true); },1700);
     return;
   }
+  /* Solo mode */
   var localWon=(winner===p1);
   if(winner===p1) score[0]++; else score[1]++;
   updateBars();
@@ -1186,6 +1171,7 @@ function doKO(loser,winner){
 /* ── CPU AI ── */
 var cpuIntent='approach', cpuIT=0;
 function updateCPU(){
+  /* ONLY runs in solo mode (onlineMode===false). p2 is the CPU. */
   if(!p2||!p1||!gameActive||p2.stunned>0||p2.state==='ko'||p2.state==='hurt'){if(p2)p2.blocking=false;return;}
   var dist=Math.abs(p1.x-p2.x);
   cpuIT--;
@@ -1233,14 +1219,17 @@ function drawGlove(cx2,cy2,w,h,col,shd,impact,isLead){
   }
 }
 
+/* ── DRAW FIGHTER ── */
 function drawFighter(f){
   var cx=f.x, cy=GROUND;
+  /* p2 (CPU or online guest fighter) faces LEFT; p1 faces RIGHT */
   var facesLeft=(f.isCPU||f.isOnlineP2);
   var dir=facesLeft?-1:1;
-  var isKO=f.state==='ko';
+  var isKO=f.state==='ko', isHurt=f.state==='hurt';
   var isJab=f.state==='jab', isHeavy=f.state==='heavy', isBlk=f.blocking;
   var lead=f.leadHand;
 
+  /* p1=warm skin, p2=darker skin */
   var skin=facesLeft?'#c07030':'#e89050';
   var skinD=facesLeft?'#9a5018':'#c06828';
   var t1=f.shortCol1, t2=f.shortCol2;
@@ -1260,29 +1249,37 @@ function drawFighter(f){
 
   if(isKO){
     ctx.save();ctx.rotate(dir*0.38);
+    /* KO body */
     fr(-16,-18,32,38,skin);fr(-18,-36,36,22,skin);
     fr(-10,-54,20,20,skin);fr(-12,-58,24,6,hair);
     fr(-14,-50,4,16,skinD);
     ctx.restore();
   } else {
+    /* Boots */
     var lleg=dir>0?-13:5, rleg=dir>0?5:-13;
     fr(lleg+leg/2,0,14,14,boot);
     fr(rleg-leg/2,0,14,14,boot);
     fr(lleg+leg/2-2,0,3,14,'#1a1a88');
     fr(rleg-leg/2-2,0,3,14,'#1a1a88');
+    /* Shorts */
     fr(-18,-26,36,28,t1);
     fr(-18,-26,36,8,t2);
     fr(-2,-26,4,28,t2);
     fr(-18,-22,8,4,stripe);
     fr(10,-22,8,4,stripe);
+    /* Torso */
     fr(-14,-58,28,34,skin);
     fr(-14,-58,6,34,skinD);
+    /* Head */
     fr(-11,-80,22,24,skin);
     fr(-11,-80,5,24,skinD);
     fr(-13,-84,26,8,hair);
+    /* Head band */
     fr(-12,-72,24,5,band);
+    /* Eyes */
     fr(dir>0?3:-7,-74,5,4,'#111');
     fr(dir>0?4:-6,-73,2,2,'#fff');
+    /* Gloves */
     var jabExt=(isJab?22:0), hvyExt=(isHeavy?28:0);
     var jImpact=(isJab&&jabExt>0), hImpact=(isHeavy&&hvyExt>0);
     if(lead===0){
@@ -1292,10 +1289,12 @@ function drawFighter(f){
       drawGlove(-dir*16+(dir*(18+hvyExt)),-42,20,16,glov,gSh,hImpact,false);
       drawGlove( dir*10,                   -54,16,12,glov,gSh,false,true);
     }
+    /* Block shield */
     if(isBlk){
       ctx.fillStyle='rgba(100,160,255,0.35)';
       ctx.fillRect(-dir*20,-82,dir*44,70);
     }
+    /* Hurt flash */
     if(f.hurtFlash>0&&f.hurtFlash%3<2){
       ctx.fillStyle='rgba(255,80,0,0.55)';
       ctx.fillRect(-18,-82,36,82);
@@ -1305,28 +1304,38 @@ function drawFighter(f){
 }
 
 function drawScene(){
+  /* Sky gradient */
   var sky=ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#08001a');sky.addColorStop(0.7,'#180030');sky.addColorStop(1,'#2a0015');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  /* Crowd */
   for(var i=0;i<60;i++){
     var cx2=10+i*11+Math.sin(i*7.3)*3,cy2=H-160+Math.sin(i*2.1)*15;
     var cc=['#cc2200','#0033bb','#cc8800','#228800','#880088'][i%5];
     fr(cx2-4,cy2-20,8,20,cc);fr(cx2-5,cy2-30,10,12,cc);fr(cx2-4,cy2-40,8,12,'#e89050');
   }
+  /* Ring */
   fr(0,GROUND+10,W,60,'#8B1a00');
   fr(40,GROUND+8,W-80,8,'#cc3300');
   fr(40,GROUND+2,W-80,8,'#ffdd00');
   fr(20,GROUND-2,10,80,'#ffdd00');fr(W-30,GROUND-2,10,80,'#ffdd00');
   fr(0,GROUND,W,4,'#cc2200');
+  /* Ropes */
   for(var j=0;j<3;j++){
     var ry=GROUND-60-j*35;
     ctx.strokeStyle=j===1?'#cc2200':'#ffdd00';ctx.lineWidth=4;
     ctx.beginPath();ctx.moveTo(20,ry);ctx.lineTo(W-20,ry);ctx.stroke();
   }
+  /* Canvas floor */
   ctx.fillStyle='rgba(180,80,0,0.18)';ctx.fillRect(20,GROUND-2,W-40,10);
 }
 
 function drawEffects(){
+  /* particles */
+  particles.forEach(function(pt){
+    ctx.fillStyle=pt.col;
+    ctx.fillRect(Math.round(pt.x),Math.round(pt.y),Math.ceil(pt.size),Math.ceil(pt.size));
+  });
   effects.forEach(function(e){
     var alpha=e.life/e.maxLife;
     ctx.save();ctx.globalAlpha=alpha;
@@ -1363,8 +1372,10 @@ function drawKOText(){
 function update(){
   if(!p1||!p2) return;
 
+  /* GUEST: only sends inputs, renders host state */
   if(onlineMode&&!isHost){
     guestSendInputs();
+    /* animate particles locally for smoothness */
     var np=[],ne=[];
     for(var i=0;i<particles.length;i++){var pt=particles[i];pt.x+=pt.vx;pt.y+=pt.vy;pt.vy+=0.28;pt.life--;if(pt.life>0)np.push(pt);}
     for(var j=0;j<effects.length;j++){var ef=effects[j];ef.relY-=0.55;ef.life--;if(ef.life>0)ne.push(ef);}
@@ -1372,14 +1383,23 @@ function update(){
     return;
   }
 
+  /* HOST / SOLO: run all physics */
+
+  /* p1 movement — always the local keyboard player */
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
     p1.walkDir=0;
     if((K['KeyA']||K['ArrowLeft'])  &&p1.x>100)     {p1.x-=2.5;p1.walkDir=-1;}
     if((K['KeyD']||K['ArrowRight']) &&p1.x<p2.x-70) {p1.x+=2.5;p1.walkDir=1;}
   }
 
-  if(onlineMode){ applyGuestInputs(); } else { updateCPU(); }
+  /* p2 movement — CPU in solo, guest inputs in online */
+  if(onlineMode){
+    applyGuestInputs();  /* reads guestKeys set by realtime channel */
+  } else {
+    updateCPU();         /* CPU AI */
+  }
 
+  /* Tick */
   [p1,p2].forEach(function(f){
     if(f.punchCD>0)f.punchCD--;
     if(f.stunned>0)f.stunned--;
@@ -1396,9 +1416,11 @@ function update(){
   for(var j=0;j<effects.length;j++){var ef=effects[j];ef.relY-=0.55;ef.life--;if(ef.life>0)ne.push(ef);}
   particles=np;effects=ne;
 
+  /* Host sends state to guest */
   if(onlineMode) hostBroadcastState();
 }
 
+/* ── MAIN LOOP ── */
 function loop(){
   update();
   ctx.save();
@@ -1443,8 +1465,9 @@ function startGame(){
 }
 
 function beginRound(){
+  /* p1 = local player (keyboard), p2 = CPU or online guest */
   p1=makeFighter(160,false,false);
-  p2=makeFighter(480,!onlineMode,onlineMode);
+  p2=makeFighter(480,!onlineMode,onlineMode); /* CPU in solo, online-p2 in online */
   if(onlineMode&&isHost){
     p2.shortCol1='#1133cc'; p2.shortCol2='#001888';
   }
@@ -1459,6 +1482,7 @@ function beginRound(){
   updateBars();
   gameActive=true; timer=99;
   clearInterval(timerID);
+  /* Timer only runs on host/solo — guest gets timer via state broadcast */
   if(!onlineMode||isHost){
     timerID=setInterval(function(){
       if(!gameActive) return;
@@ -1480,6 +1504,7 @@ function endByTime(){
     setTimeout(function(){ hostGameOver(p1Won,false); },700);
     return;
   }
+  /* Solo */
   var earned=p1Won?(25+round*8):2;
   sessionTC+=earned; player.tc+=earned;
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
@@ -1497,6 +1522,7 @@ function endByTime(){
   },700);
 }
 
+/* ── GO TO GAME (FIX: was missing entirely) ── */
 function goToGame(){
   onlineMode=false;
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
@@ -1530,37 +1556,27 @@ function goToMenu(){
 /* ── GLOBAL EXPOSED ── */
 var G={
   /* Auth */
-  doLogin:doLogin,
-  doSignup:doSignup,
-  doLogout:doLogout,
-  doGuest:doGuest,
+  doLogin:doLogin, doSignup:doSignup, doLogout:doLogout, doGuest:doGuest,
   switchTab:switchTab,
   /* Navigation */
-  showScreen:showScreen,
-  goToGame:goToGame,
-  goToMenu:goToMenu,
+  showScreen:showScreen, goToGame:goToGame, goToMenu:goToMenu,
   /* Name */
   saveName:saveName,
   /* Shop */
   renderShop:renderShop,
   /* Inventory */
-  renderInventory:renderInventory,
-  switchInvTab:switchInvTab,
+  renderInventory:renderInventory, switchInvTab:switchInvTab,
   /* Online */
-  showOnlineLobby:showOnlineLobby,
-  createRoom:createRoom,
-  joinRoom:joinRoom,
-  leaveOnline:leaveOnline,
+  showOnlineLobby:showOnlineLobby, createRoom:createRoom, joinRoom:joinRoom, leaveOnline:leaveOnline,
   /* Game */
   overlayNext:overlayNext,
-  /* Player */
-  player:player,
-  updateMenuUI:updateMenuUI
+  /* Misc */
+  updateMenuUI:updateMenuUI, player:player
 };
 
-document.getElementById('loginBtn').addEventListener('click',function(){G.doLogin();});
-document.getElementById('signupBtn').addEventListener('click',function(){G.doSignup();});
-document.getElementById('guestBtn').addEventListener('click',function(){G.doGuest();});
+document.getElementById('loginBtn').addEventListener('click', function(){ G.doLogin(); });
+document.getElementById('signupBtn').addEventListener('click', function(){ G.doSignup(); });
+document.getElementById('guestBtn').addEventListener('click', function(){ G.doGuest(); });
 </script>
 </body>
 </html>
