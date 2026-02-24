@@ -806,9 +806,19 @@ function subscribeToRoom(code){
 
   realtimeChannel.on('broadcast',{event:'leave'},function(){
     if(gameActive){
+      // Opponent left mid-game = you win!
       gameActive=false;clearInterval(timerID);
-      showGameOverlay('OPPONENT\nDISCONNECTED!');
-      document.getElementById('goMainBtn').textContent='MENU';
+      var earned=60;
+      player.tc+=earned;
+      player.stats.wins++;
+      player.history.unshift({result:'win',opponent:opponentName,rounds:round,ko:false,tc:earned});
+      saveProfile();
+      showGameOverlay('OPPONENT\nRAGE QUIT!\n\nYOU WIN!\n+'+earned+' TC');
+      document.getElementById('goMainBtn').textContent='MAIN MENU';
+    } else if(!gameActive && myRoomCode){
+      // Opponent left lobby before game started
+      showGameOverlay('OPPONENT\nLEFT LOBBY');
+      document.getElementById('goMainBtn').textContent='MAIN MENU';
     }
   });
 
@@ -880,10 +890,7 @@ function handleOnlineGameOver(won,ko){
   if(won)player.stats.wins++;else player.stats.losses++;
   player.history.unshift({result:won?'win':'loss',opponent:opponentName,rounds:round,ko:ko,tc:earned});
   saveProfile();
-  showGameOverlay((won?'YOU WIN!
-':'YOU LOSE!
-')+'
-+'+earned+' TC');
+  showGameOverlay((won?'YOU WIN!\n':'YOU LOSE!\n')+'\n+'+earned+' TC');
   document.getElementById('goMainBtn').textContent='MAIN MENU';
 }
 
