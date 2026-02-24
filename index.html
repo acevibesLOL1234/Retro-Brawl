@@ -400,8 +400,8 @@ var G = (function(){
 'use strict';
 
 /* ── SUPABASE CONFIG ─────────────────────────────────────────── */
-var SB_URL = 'https://YOUR_PROJECT.supabase.co';
-var SB_KEY = 'YOUR_ANON_KEY';
+var SB_URL = 'https://llcwhpgxyaydevphxhbo.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsY3docGd4eWF5ZGV2cGh4aGJvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4OTcwMjIsImV4cCI6MjA4NzQ3MzAyMn0.Hcuty0_1BSgGf0H83I-vwG9weCD6Q_tf-9B2RUd6v3A';
 var sb = null;
 try { sb = window.supabase.createClient(SB_URL, SB_KEY); } catch(e){ console.warn('No Supabase'); }
 
@@ -708,15 +708,7 @@ function renderInvHistory(){
 
 /* ════════════════════════════════════════════════════════════════
    ONLINE MULTIPLAYER — Supabase Realtime Broadcast
-   ════════════════════════════════════════════════════════════════
-   ARCHITECTURE:
-   - One player creates a 6-char room code
-   - Both join a Supabase Realtime channel named "room:{code}"
-   - Player who created = P1 (HOST), joiner = P2 (GUEST)
-   - HOST runs authoritative game physics, broadcasts state each frame
-   - GUEST sends only input events (move, jab, heavy, block)
-   - HOST applies GUEST inputs and re-broadcasts full game state
-   - Both render from the broadcast state  */
+   ════════════════════════════════════════════════════════════════ */
 
 var onlineMode=false;
 var isHost=false;
@@ -724,7 +716,7 @@ var myRoomCode='';
 var realtimeChannel=null;
 var opponentName='OPPONENT';
 var waitingForOpponent=true;
-var guestInputQueue=[];   // HOST reads these
+var guestInputQueue=[];
 var lastBroadcastState=null;
 
 function genCode(){
@@ -784,14 +776,12 @@ function subscribeToRoom(code){
   realtimeChannel.on('broadcast',{event:'join'},function(payload){
     var d=payload.payload;
     if(isHost){
-      // Guest joined — update UI, start game
       opponentName=(d.name||'OPPONENT').slice(0,10);
       waitingForOpponent=false;
       document.getElementById('lobbyP1Name').textContent=player.name+' (YOU)';
       document.getElementById('lobbyP2Name').textContent=opponentName;
       document.getElementById('lobbyP2Dot').className='lobby-dot ready';
       document.getElementById('lobbyStatus').textContent='OPPONENT JOINED! STARTING...';
-      // Broadcast start signal
       realtimeChannel.send({type:'broadcast',event:'start',payload:{
         hostName:player.name, guestName:opponentName,
         hostShorts:player.equippedShorts
@@ -810,14 +800,12 @@ function subscribeToRoom(code){
     }
   });
 
-  // HOST receives guest inputs
   realtimeChannel.on('broadcast',{event:'input'},function(payload){
     if(isHost){
       guestInputQueue.push(payload.payload);
     }
   });
 
-  // GUEST receives full game state from host
   realtimeChannel.on('broadcast',{event:'state'},function(payload){
     if(!isHost){
       lastBroadcastState=payload.payload;
@@ -843,7 +831,6 @@ function subscribeToRoom(code){
 
   realtimeChannel.subscribe(function(status){
     if(status==='SUBSCRIBED'&&!isHost){
-      // Guest announces join
       realtimeChannel.send({type:'broadcast',event:'join',payload:{
         name:player.name, shorts:player.equippedShorts
       }});
@@ -878,23 +865,19 @@ function startOnlineGame(asHost, oppName){
 
   document.getElementById('p2HudName').textContent=opponentName;
 
-  // In online mode: p1 is always local player visually
-  // Host controls p1 (red/left), Guest controls p2 (blue/right) but sees it as "their" fighter
   guestInputQueue=[];
   startGame();
 
   if(!asHost){
-    // Guest only renders, doesn't run physics — wait for state
-    gameActive=false; // pause local physics; host drives it
+    gameActive=false;
   }
 }
 
-/* HOST: broadcast game state every frame */
 var broadcastThrottle=0;
 function hostBroadcast(){
   if(!onlineMode||!isHost||!realtimeChannel) return;
   broadcastThrottle++;
-  if(broadcastThrottle%2!==0) return; // ~30fps broadcasts
+  if(broadcastThrottle%2!==0) return;
   if(!p1||!p2) return;
   realtimeChannel.send({type:'broadcast',event:'state',payload:{
     p1:{x:p1.x,hp:p1.hp,stamina:p1.stamina,state:p1.state,
@@ -911,7 +894,6 @@ function hostBroadcast(){
   }});
 }
 
-/* HOST: process guest input queue */
 function processGuestInputs(){
   while(guestInputQueue.length){
     var inp=guestInputQueue.shift();
@@ -928,10 +910,8 @@ function processGuestInputs(){
   }
 }
 
-/* GUEST: apply state received from host */
 function applyNetworkState(ns){
   if(!ns||!p1||!p2) return;
-  // Apply to p1/p2 render state
   var fp=ns.p1, fg=ns.p2;
   p1.x=fp.x;p1.hp=fp.hp;p1.stamina=fp.stamina;p1.state=fp.state;
   p1.leadHand=fp.leadHand;p1.blocking=fp.blocking;
@@ -949,7 +929,6 @@ function applyNetworkState(ns){
   updateBars();
 }
 
-/* GUEST: send input to host */
 function guestSendInput(type,data){
   if(!onlineMode||isHost||!realtimeChannel) return;
   var payload={type:type};
@@ -959,7 +938,7 @@ function guestSendInput(type,data){
 
 function handleOnlineGameOver(d){
   gameActive=false;clearInterval(timerID);
-  var iWon=!d.hostWon; // guest wins if host didn't
+  var iWon=!d.hostWon;
   var earned=iWon?60:5;
   player.tc+=earned;
   if(iWon) player.stats.wins++; else player.stats.losses++;
@@ -1029,7 +1008,6 @@ canvas.addEventListener('mousedown',function(e){
   e.preventDefault();
   if(!gameActive)return;
   if(onlineMode&&!isHost){
-    // Guest: send attack to host
     if(e.button===0) guestSendInput('attack',{attack:'jab'});
     if(e.button===2) guestSendInput('attack',{attack:'heavy'});
   } else {
@@ -1076,7 +1054,7 @@ function doAtk(atk,def,type){
   if(atk.punchCD>0||atk.stunned>0||atk.state==='ko'||atk.state==='hurt')return;
   if(atk.stamina<8){addFX('NO STAM!',atk.x,-60,'#666');return;}
 
-  atk.leadHand=1-atk.leadHand; // alternate hands!
+  atk.leadHand=1-atk.leadHand;
   atk.state=type;
   atk.stateTimer=type==='jab'?16:28;
   atk.punchCD=atk.stateTimer;
@@ -1108,7 +1086,6 @@ function doAtk(atk,def,type){
       def.hp=Math.max(0,def.hp-dmg);
       def.hurtFlash=12;def.stunned=type==='heavy'?38:12;
       def.state='hurt';def.stateTimer=def.stunned;
-      if(!atk.isCPU){player.stats.kos+=0;} // track per-ko at KO
       if(def.hp<=0)doKO(def,atk);
     }
     updateBars();
@@ -1126,7 +1103,6 @@ function doKO(loser,winner){
   updateBars();
   document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
 
-  // Online: host broadcasts game over
   if(onlineMode&&isHost){
     realtimeChannel.send({type:'broadcast',event:'gameover',payload:{
       hostWon:winner===p1,ko:true,round:round
@@ -1138,7 +1114,6 @@ function doKO(loser,winner){
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
 
   if(!onlineMode){
-    var oppName=player.name==='CPU'?'CPU IRON':'CPU IRON';
     player.stats.kos+=1;
     if(localWon){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
     else{player.stats.losses++;player.history.unshift({result:'loss',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
@@ -1246,15 +1221,12 @@ function drawFighter(f){
     ctx.restore();ctx.restore();return;
   }
 
-  // Legs
   var llx=dir>0?-14:3,rlx=dir>0?3:-14;
   fr(llx,-36+leg*0.4,12,20,t1);fr(llx-1,-16+leg*0.4,14,10,boot);
   fr(rlx,-36-leg*0.4,12,20,t1);fr(rlx-1,-16-leg*0.4,14,10,boot);
   fr(llx+2,-28+leg*0.4,8,3,stripe);
   fr(rlx+2,-28-leg*0.4,8,3,stripe);
-  // Waistband
   fr(-16,-38,32,7,band);fr(-16,-40,32,4,t2);
-  // Torso (shirtless)
   fr(-14,-68,28,32,skin);
   fr(-14,-66,12,12,skinD);fr(2,-66,12,12,skinD);
   fr(-12,-58,10,8,skin);fr(2,-58,10,8,skin);
@@ -1264,7 +1236,6 @@ function drawFighter(f){
   fr(-18,-68,8,10,skinD);fr(10,-68,8,10,skinD);
   fr(-10,-66,20,2,'#f8b888');
   fr(-1,-66,2,30,skinD);
-  // Head
   var hy=-92;
   fr(-5,-72,10,8,skin);fr(-4,-72,8,6,skinD);
   fr(-13,hy-3,26,8,hair);
@@ -1282,7 +1253,6 @@ function drawFighter(f){
   fr(-8,hy+24,16,5,skinD);
   fr(-11,hy-1,4,6,hair);fr(-6,hy-2,4,7,hair);fr(-1,hy-2,4,7,hair);fr(4,hy-1,4,6,hair);
 
-  // Arms & gloves (alternating lead hand)
   var gW=18,gH=15,aW=10,aH=24;
   var faX,faY,baX,baY,fgX,fgY,bgX,bgY,impact=false;
 
@@ -1306,11 +1276,9 @@ function drawFighter(f){
   }
 
   var frontIsLead=(lead===1),backIsLead=(lead===0);
-  // Back arm
   ctx.fillStyle=skin;ctx.fillRect(baX-aW/2,baY,aW,aH);
   ctx.fillStyle=skinD;ctx.fillRect(baX-aW/2,baY,4,aH);
   drawGlove(bgX,bgY,gW,gH,glov,gSh,impact&&backIsLead,backIsLead);
-  // Front arm
   ctx.fillStyle=skin;ctx.fillRect(faX-aW/2,faY,aW,aH);
   ctx.fillStyle=skinD;ctx.fillRect(faX-aW/2,faY,4,aH);
   drawGlove(fgX,fgY,gW+2,gH+2,glov,gSh,impact&&frontIsLead,frontIsLead);
@@ -1323,7 +1291,6 @@ function drawFighter(f){
 function drawScene(){
   var T=Date.now();
   ctx.fillStyle='#08011a';ctx.fillRect(0,0,W,H);
-  // Crowd
   var cc=['#6600aa','#aa3300','#004499','#228800','#880055','#553300','#005588'];
   for(var row=0;row<5;row++){
     for(var i=0;i<24;i++){
@@ -1335,11 +1302,9 @@ function drawScene(){
       ctx.fillStyle='#000';ctx.fillRect(bx+7,by+cheer-8,3,3);ctx.fillRect(bx+12,by+cheer-8,3,3);
     }
   }
-  // Spotlight
   var sg=ctx.createRadialGradient(W/2,0,10,W/2,10,340);
   sg.addColorStop(0,'rgba(255,240,180,0.2)');sg.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);
-  // Ring mat
   var mg=ctx.createLinearGradient(0,GROUND-100,0,GROUND+20);
   mg.addColorStop(0,'#c8a050');mg.addColorStop(1,'#7a5520');
   ctx.fillStyle=mg;ctx.fillRect(75,GROUND-100,W-150,80);
@@ -1348,27 +1313,23 @@ function drawScene(){
   ctx.beginPath();ctx.arc(W/2,GROUND-60,55,0,Math.PI*2);ctx.stroke();
   ctx.restore();
   ctx.fillStyle='#3a1a08';ctx.fillRect(30,GROUND-20,W-60,30);
-  // Corner posts
   [75,W-75].forEach(function(px2){
     ctx.fillStyle='#881100';ctx.fillRect(px2-7,GROUND-170,14,175);
     ctx.fillStyle='#cc2200';ctx.fillRect(px2-5,GROUND-170,10,170);
     ctx.fillStyle='#ff4400';ctx.fillRect(px2-8,GROUND-175,16,8);
   });
-  // Ropes
   [[GROUND-165,'#ff1111'],[GROUND-138,'#eeeeee'],[GROUND-111,'#ff1111']].forEach(function(r){
     ctx.strokeStyle=r[1];ctx.lineWidth=6;
     ctx.beginPath();ctx.moveTo(75,r[0]);ctx.lineTo(W-75,r[0]);ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(75,r[0]-1);ctx.lineTo(W-75,r[0]-1);ctx.stroke();
   });
-  // Shadows
   [p1,p2].forEach(function(f){
     if(!f)return;
     var sg2=ctx.createRadialGradient(f.x,GROUND,2,f.x,GROUND,32);
     sg2.addColorStop(0,'rgba(0,0,0,0.5)');sg2.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=sg2;ctx.beginPath();ctx.ellipse(f.x,GROUND,30,8,0,0,Math.PI*2);ctx.fill();
   });
-  // Online label
   if(onlineMode){
     ctx.fillStyle='rgba(0,200,0,0.15)';ctx.fillRect(0,0,W,H);
   }
@@ -1401,7 +1362,6 @@ function drawStamBars(){
   ctx.fillStyle=(p2&&p2.stamina>30)?'#00ff55':'#ff2244';
   if(p2)ctx.fillRect(W-110,H-20,Math.max(0,p2.stamina),9);
   ctx.fillStyle='#444';ctx.fillText('STAM',W-108,H-13);
-  // Lead hand indicator
   if(p1&&gameActive){
     var lbl2=(p1.leadHand===0?'LEFT':'RIGHT')+' LEADS';
     ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(8,H-36,122,12);
@@ -1423,7 +1383,6 @@ function drawKOText(){
 /* ── UPDATE ── */
 function update(){
   if(!p1||!p2)return;
-  // Guest in online mode: don't run local physics, just render from network state
   if(onlineMode&&!isHost) return;
 
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
@@ -1432,7 +1391,6 @@ function update(){
     if((K['KeyD']||K['ArrowRight'])&&p1.x<p2.x-70){p1.x+=2.5;p1.walkDir=1;}
   }
 
-  // Process guest inputs if host
   if(onlineMode&&isHost) processGuestInputs();
 
   [p1,p2].forEach(function(f){
@@ -1501,7 +1459,6 @@ function beginRound(){
   p1=makeFighter(160,false);
   p2=makeFighter(480,true);
   if(onlineMode){
-    // In online: p2 uses opponent's default shorts (could extend to sync)
     p2.shortCol1='#1133cc';p2.shortCol2='#001888';
   }
   updateBars();
@@ -1515,7 +1472,6 @@ function beginRound(){
   gameActive=true;timer=99;
   clearInterval(timerID);
 
-  // Timer: only host runs it in online mode
   if(!onlineMode||isHost){
     timerID=setInterval(function(){
       if(!gameActive)return;
@@ -1570,7 +1526,6 @@ function endByTime(){
       }
     }catch(e){}
   }
-  // Stay on auth
 })();
 
 /* ── PUBLIC API ── */
@@ -1587,9 +1542,8 @@ return {
   startGame:startGame
 };
 
-})(); // end G module
+})();
 
-/* Wire auth buttons outside IIFE scope so onclick attrs work */
 document.getElementById('loginBtn').addEventListener('click',function(){G.doLogin();});
 document.getElementById('signupBtn').addEventListener('click',function(){G.doSignup();});
 document.getElementById('guestBtn').addEventListener('click',function(){G.doGuest();});
