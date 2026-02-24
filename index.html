@@ -707,7 +707,14 @@ function renderInvHistory(){
 }
 
 /* ════════════════════════════════════════════════════════════════
-   ONLINE MULTIPLAYER — Supabase Realtime Broadcast
+   ONLINE MULTIPLAYER — Simple P2P via Supabase Realtime
+   ════════════════════════════════════════════════════════════════
+   HOW IT WORKS (simplified, actually working):
+   - Both players run full game physics locally (no host authority)
+   - HOST = p1 (left, red), GUEST = p2 (right, blue)
+   - Each player broadcasts their OWN fighter's inputs each frame
+   - Both sides apply inputs immediately locally AND receive opponent inputs
+   - Opponent fighter is driven by received inputs on both screens
    ════════════════════════════════════════════════════════════════ */
 
 var onlineMode=false;
@@ -715,9 +722,10 @@ var isHost=false;
 var myRoomCode='';
 var realtimeChannel=null;
 var opponentName='OPPONENT';
-var waitingForOpponent=true;
-var guestInputQueue=[];
-var lastBroadcastState=null;
+
+// Inputs received from opponent this frame
+var netOppKeys={left:false,right:false,block:false};
+var netOppAttack=null; // 'jab' or 'heavy' or null
 
 function genCode(){
   var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -734,12 +742,9 @@ function showOnlineLobby(){
 }
 
 async function createRoom(){
-  if(!sb){
-    document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED FOR ONLINE PLAY';return;
-  }
+  if(!sb){document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED FOR ONLINE PLAY';return;}
   myRoomCode=genCode();
   isHost=true;
-  waitingForOpponent=true;
   document.getElementById('roomCodeDisplay').textContent=myRoomCode;
   document.getElementById('lobbyP1Name').textContent=player.name+' (YOU)';
   document.getElementById('lobbyP2Name').textContent='WAITING...';
@@ -751,14 +756,11 @@ async function createRoom(){
 }
 
 async function joinRoom(){
-  if(!sb){
-    document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED FOR ONLINE PLAY';return;
-  }
+  if(!sb){document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED FOR ONLINE PLAY';return;}
   var code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
   if(code.length!==6){document.getElementById('lobbyErr').textContent='ENTER A 6-CHARACTER CODE';return;}
   myRoomCode=code;
   isHost=false;
-  waitingForOpponent=false;
   document.getElementById('roomCodeDisplay').textContent=myRoomCode;
   document.getElementById('lobbyP1Name').textContent='HOST';
   document.getElementById('lobbyP2Name').textContent=player.name+' (YOU)';
@@ -773,57 +775,38 @@ function subscribeToRoom(code){
   if(realtimeChannel) sb.removeChannel(realtimeChannel);
   realtimeChannel=sb.channel('room:'+code,{config:{broadcast:{self:false}}});
 
+  // HOST hears guest join
   realtimeChannel.on('broadcast',{event:'join'},function(payload){
+    if(!isHost) return;
     var d=payload.payload;
-    if(isHost){
-      opponentName=(d.name||'OPPONENT').slice(0,10);
-      waitingForOpponent=false;
-      document.getElementById('lobbyP1Name').textContent=player.name+' (YOU)';
-      document.getElementById('lobbyP2Name').textContent=opponentName;
-      document.getElementById('lobbyP2Dot').className='lobby-dot ready';
-      document.getElementById('lobbyStatus').textContent='OPPONENT JOINED! STARTING...';
-      realtimeChannel.send({type:'broadcast',event:'start',payload:{
-        hostName:player.name, guestName:opponentName,
-        hostShorts:player.equippedShorts
-      }});
-      setTimeout(function(){startOnlineGame(true, opponentName);},1200);
-    }
+    opponentName=(d.name||'OPPONENT').slice(0,10);
+    document.getElementById('lobbyP2Name').textContent=opponentName;
+    document.getElementById('lobbyP2Dot').className='lobby-dot ready';
+    document.getElementById('lobbyStatus').textContent='OPPONENT JOINED! STARTING...';
+    realtimeChannel.send({type:'broadcast',event:'start',payload:{hostName:player.name}});
+    setTimeout(function(){startOnlineGame();},1200);
   });
 
+  // GUEST hears start signal
   realtimeChannel.on('broadcast',{event:'start'},function(payload){
-    if(!isHost){
-      var d=payload.payload;
-      opponentName=(d.hostName||'OPPONENT').slice(0,10);
-      document.getElementById('lobbyP1Name').textContent=opponentName;
-      document.getElementById('lobbyStatus').textContent='STARTING FIGHT!';
-      setTimeout(function(){startOnlineGame(false, opponentName);},600);
-    }
+    if(isHost) return;
+    opponentName=(payload.payload.hostName||'OPPONENT').slice(0,10);
+    document.getElementById('lobbyStatus').textContent='STARTING FIGHT!';
+    setTimeout(function(){startOnlineGame();},600);
   });
 
-  realtimeChannel.on('broadcast',{event:'input'},function(payload){
-    if(isHost){
-      guestInputQueue.push(payload.payload);
-    }
-  });
-
-  realtimeChannel.on('broadcast',{event:'state'},function(payload){
-    if(!isHost){
-      lastBroadcastState=payload.payload;
-      applyNetworkState(lastBroadcastState);
-    }
-  });
-
-  realtimeChannel.on('broadcast',{event:'gameover'},function(payload){
-    if(!isHost){
-      var d=payload.payload;
-      handleOnlineGameOver(d);
-    }
+  // Receive opponent input state (sent every frame by opponent)
+  realtimeChannel.on('broadcast',{event:'inp'},function(payload){
+    var d=payload.payload;
+    netOppKeys.left=d.l||false;
+    netOppKeys.right=d.r||false;
+    netOppKeys.block=d.b||false;
+    if(d.atk) netOppAttack=d.atk; // queue attack
   });
 
   realtimeChannel.on('broadcast',{event:'leave'},function(){
     if(gameActive){
-      gameActive=false;
-      clearInterval(timerID);
+      gameActive=false;clearInterval(timerID);
       showGameOverlay('OPPONENT\nDISCONNECTED!');
       document.getElementById('goMainBtn').textContent='MENU';
     }
@@ -831,123 +814,76 @@ function subscribeToRoom(code){
 
   realtimeChannel.subscribe(function(status){
     if(status==='SUBSCRIBED'&&!isHost){
-      realtimeChannel.send({type:'broadcast',event:'join',payload:{
-        name:player.name, shorts:player.equippedShorts
-      }});
+      realtimeChannel.send({type:'broadcast',event:'join',payload:{name:player.name}});
     }
   });
 }
 
 function leaveChannel(){
   if(realtimeChannel&&sb){
-    try{
-      realtimeChannel.send({type:'broadcast',event:'leave',payload:{}});
-      sb.removeChannel(realtimeChannel);
-    }catch(e){}
+    try{realtimeChannel.send({type:'broadcast',event:'leave',payload:{}});sb.removeChannel(realtimeChannel);}catch(e){}
     realtimeChannel=null;
   }
 }
 
 function leaveOnline(){
   leaveChannel();
-  showScreen('menuScreen');
-  updateMenuUI();
+  showScreen('menuScreen');updateMenuUI();
 }
 
-/* ── ONLINE GAME ─────────────────────────────────────────────── */
-function startOnlineGame(asHost, oppName){
-  onlineMode=true;
-  opponentName=oppName||'OPPONENT';
-  document.getElementById('onlinePingBadge').style.display='flex';
+/* Broadcast MY inputs to opponent every frame */
+var netBroadcastFrame=0;
+var lastSentKeys={l:false,r:false,b:false};
+function netBroadcastInputs(myLeft,myRight,myBlock,myAtk){
+  if(!onlineMode||!realtimeChannel) return;
+  netBroadcastFrame++;
+  var changed=(myLeft!==lastSentKeys.l||myRight!==lastSentKeys.r||myBlock!==lastSentKeys.b||myAtk);
+  if(!changed&&netBroadcastFrame%3!==0) return; // throttle unchanged state to every 3 frames
+  lastSentKeys={l:myLeft,r:myRight,b:myBlock};
+  var payload={l:myLeft,r:myRight,b:myBlock};
+  if(myAtk) payload.atk=myAtk;
+  realtimeChannel.send({type:'broadcast',event:'inp',payload:payload});
+}
 
+function startOnlineGame(){
+  onlineMode=true;
+  netOppKeys={left:false,right:false,block:false};
+  netOppAttack=null;
+  lastSentKeys={l:false,r:false,b:false};
+
+  document.getElementById('onlinePingBadge').style.display='flex';
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('gameWrapper').classList.add('active');
 
-  document.getElementById('p2HudName').textContent=opponentName;
+  // HOST=p1(left/red), GUEST=p2(right/blue) — set correct name on HUD
+  if(isHost){
+    document.getElementById('p1HudName').textContent=player.name;
+    document.getElementById('p2HudName').textContent=opponentName;
+  } else {
+    document.getElementById('p1HudName').textContent=opponentName;
+    document.getElementById('p2HudName').textContent=player.name;
+  }
 
-  guestInputQueue=[];
-  guestLastDir=0;
   startGame();
-  // Guest: do NOT set gameActive=false — rendering needs it true.
-  // update() checks (onlineMode&&!isHost) and returns early, so no local physics run.
 }
 
-var broadcastThrottle=0;
-function hostBroadcast(){
-  if(!onlineMode||!isHost||!realtimeChannel) return;
-  broadcastThrottle++;
-  if(broadcastThrottle%2!==0) return;
-  if(!p1||!p2) return;
-  realtimeChannel.send({type:'broadcast',event:'state',payload:{
-    p1:{x:p1.x,hp:p1.hp,stamina:p1.stamina,state:p1.state,
-        leadHand:p1.leadHand,blocking:p1.blocking,
-        shortCol1:p1.shortCol1,shortCol2:p1.shortCol2,
-        bobPhase:p1.bobPhase,legPhase:p1.legPhase,walkDir:p1.walkDir},
-    p2:{x:p2.x,hp:p2.hp,stamina:p2.stamina,state:p2.state,
-        leadHand:p2.leadHand,blocking:p2.blocking,
-        shortCol1:p2.shortCol1,shortCol2:p2.shortCol2,
-        bobPhase:p2.bobPhase,legPhase:p2.legPhase,walkDir:p2.walkDir},
-    timer:timer, round:round, score:score,
-    particles:particles.slice(0,30),
-    effects:effects.slice(0,10)
-  }});
-}
+/* My fighter reference (host=p1, guest=p2) */
+function myF(){ return isHost?p1:p2; }
+/* Opponent fighter reference */
+function oppF(){ return isHost?p2:p1; }
 
-function processGuestInputs(){
-  while(guestInputQueue.length){
-    var inp=guestInputQueue.shift();
-    if(!p2||!p1) continue;
-    if(inp.type==='move'){
-      p2.walkDir=inp.dir;
-      if(inp.dir===1  && p2.x > p1.x+70) p2.x -= 2.5;
-      if(inp.dir===-1 && p2.x < W-70)    p2.x += 2.5;
-    } else if(inp.type==='attack'){
-      doAtk(p2,p1,inp.attack);
-    } else if(inp.type==='block'){
-      p2.blocking=inp.val;
-    }
-  }
-}
-
-function applyNetworkState(ns){
-  if(!ns||!p1||!p2) return;
-  var fp=ns.p1, fg=ns.p2;
-  // Apply host's authoritative positions for both fighters
-  p1.x=fp.x;p1.hp=fp.hp;p1.stamina=fp.stamina;p1.state=fp.state;
-  p1.leadHand=fp.leadHand;p1.blocking=fp.blocking;
-  p1.bobPhase=fp.bobPhase;p1.legPhase=fp.legPhase;p1.walkDir=fp.walkDir;
-  p2.x=fg.x;p2.hp=fg.hp;p2.stamina=fg.stamina;p2.state=fg.state;
-  p2.leadHand=fg.leadHand;p2.blocking=fg.blocking;
-  p2.bobPhase=fg.bobPhase;p2.legPhase=fg.legPhase;p2.walkDir=fg.walkDir;
-  if(ns.timer!==undefined){
-    timer=ns.timer;
-    document.getElementById('tmr').textContent=(timer<10?'0':'')+timer;
-  }
-  if(ns.score) document.getElementById('hudScr').textContent=ns.score[0]+' - '+ns.score[1];
-  if(ns.particles) particles=ns.particles;
-  if(ns.effects)   effects=ns.effects;
-  // Guest HP bars: p2 is the guest's fighter, show their bar on the left of HUD
-  document.getElementById('hf1').style.width=Math.max(0,p2.hp)+'%';
-  document.getElementById('hf2').style.width=Math.max(0,p1.hp)+'%';
-}
-
-function guestSendInput(type,data){
-  if(!onlineMode||isHost||!realtimeChannel) return;
-  var payload={type:type};
-  Object.assign(payload,data);
-  realtimeChannel.send({type:'broadcast',event:'input',payload:payload});
-}
-
-function handleOnlineGameOver(d){
+/* ── ONLINE GAME OVER ── */
+function handleOnlineGameOver(won,ko){
   gameActive=false;clearInterval(timerID);
-  var iWon=!d.hostWon;
-  var earned=iWon?60:5;
+  var earned=won?60:5;
   player.tc+=earned;
-  if(iWon) player.stats.wins++; else player.stats.losses++;
-  player.history.unshift({result:iWon?'win':'loss',opponent:opponentName,
-    rounds:round,ko:d.ko,tc:earned});
+  if(won)player.stats.wins++;else player.stats.losses++;
+  player.history.unshift({result:won?'win':'loss',opponent:opponentName,rounds:round,ko:ko,tc:earned});
   saveProfile();
-  showGameOverlay((iWon?'YOU WIN!\n':'YOU LOSE!\n')+'\n+'+earned+' TC');
+  showGameOverlay((won?'YOU WIN!
+':'YOU LOSE!
+')+'
++'+earned+' TC');
   document.getElementById('goMainBtn').textContent='MAIN MENU';
 }
 
@@ -990,44 +926,30 @@ function makeFighter(x,isCPU){
 /* ── INPUT ── */
 var K={};
 
-// Returns the fighter this client controls
-function myFighter(){ return (onlineMode && !isHost) ? p2 : p1; }
-// Returns the opponent fighter
-function oppFighter(){ return (onlineMode && !isHost) ? p1 : p2; }
-
 document.addEventListener('keydown',function(e){
   if(K[e.code])return;
   K[e.code]=true;
   if(e.code==='Space')e.preventDefault();
   if(!gameActive)return;
+  // Block key: apply to MY fighter immediately
   if(e.code==='Space'){
-    var me=myFighter();
-    if(me){
-      if(onlineMode&&!isHost){ guestSendInput('block',{val:true}); }
-      else { me.blocking=true; }
-    }
+    var me=myF();
+    if(me) me.blocking=true;
   }
 });
 document.addEventListener('keyup',function(e){
   K[e.code]=false;
   if(e.code==='Space'){
-    var me=myFighter();
-    if(me){
-      if(onlineMode&&!isHost){ guestSendInput('block',{val:false}); }
-      else { me.blocking=false; }
-    }
+    var me=myF();
+    if(me) me.blocking=false;
   }
 });
 canvas.addEventListener('mousedown',function(e){
   e.preventDefault();
   if(!gameActive)return;
-  if(onlineMode&&!isHost){
-    if(e.button===0) guestSendInput('attack',{attack:'jab'});
-    if(e.button===2) guestSendInput('attack',{attack:'heavy'});
-  } else {
-    if(e.button===0) doAtk(p1,p2,'jab');
-    if(e.button===2) doAtk(p1,p2,'heavy');
-  }
+  // Attack MY fighter vs opponent
+  if(e.button===0) doAtk(myF(),oppF(),'jab');
+  if(e.button===2) doAtk(myF(),oppF(),'heavy');
 });
 canvas.addEventListener('contextmenu',function(e){e.preventDefault();});
 
@@ -1041,43 +963,23 @@ function wireBtn(id,dn,up){
 }
 wireBtn('bjab',function(){
   if(!gameActive)return;
-  if(onlineMode&&!isHost){ guestSendInput('attack',{attack:'jab'}); }
-  else { doAtk(p1,p2,'jab'); }
+  doAtk(myF(),oppF(),'jab');
 });
 wireBtn('bheavy',function(){
   if(!gameActive)return;
-  if(onlineMode&&!isHost){ guestSendInput('attack',{attack:'heavy'}); }
-  else { doAtk(p1,p2,'heavy'); }
+  doAtk(myF(),oppF(),'heavy');
 });
 wireBtn('bblock',
-  function(){
-    if(onlineMode&&!isHost){ guestSendInput('block',{val:true}); }
-    else if(p1){ p1.blocking=true; }
-  },
-  function(){
-    if(onlineMode&&!isHost){ guestSendInput('block',{val:false}); }
-    else if(p1){ p1.blocking=false; }
-  }
+  function(){ var me=myF(); if(me) me.blocking=true;  },
+  function(){ var me=myF(); if(me) me.blocking=false; }
 );
 wireBtn('dleft',
-  function(){
-    K['KeyA']=true;
-    if(onlineMode&&!isHost) guestSendInput('move',{dir:1}); // guest moves left = toward p1
-  },
-  function(){
-    K['KeyA']=false;
-    if(onlineMode&&!isHost) guestSendInput('move',{dir:0});
-  }
+  function(){ K['KeyA']=true;  },
+  function(){ K['KeyA']=false; }
 );
 wireBtn('dright',
-  function(){
-    K['KeyD']=true;
-    if(onlineMode&&!isHost) guestSendInput('move',{dir:-1}); // guest moves right = away
-  },
-  function(){
-    K['KeyD']=false;
-    if(onlineMode&&!isHost) guestSendInput('move',{dir:0});
-  }
+  function(){ K['KeyD']=true;  },
+  function(){ K['KeyD']=false; }
 );
 
 /* ── ATTACK ── */
@@ -1085,6 +987,11 @@ function doAtk(atk,def,type){
   if(!atk||!def)return;
   if(atk.punchCD>0||atk.stunned>0||atk.state==='ko'||atk.state==='hurt')return;
   if(atk.stamina<8){addFX('NO STAM!',atk.x,-60,'#666');return;}
+
+  // If online and this is MY fighter attacking, broadcast to opponent
+  if(onlineMode && atk===myF()){
+    netBroadcastInputs(K['KeyA']||K['ArrowLeft'],K['KeyD']||K['ArrowRight'],atk.blocking,type);
+  }
 
   atk.leadHand=1-atk.leadHand;
   atk.state=type;
@@ -1130,37 +1037,38 @@ function doKO(loser,winner){
   loser.state='ko';loser.stateTimer=9999;loser.hp=0;
   gameActive=false;clearInterval(timerID);
   doShakeEffect(16);
-  var localWon=(winner===p1&&!onlineMode)||(onlineMode&&isHost&&winner===p1)||(onlineMode&&!isHost&&winner===p2);
+
+  // In P2P online: winner is myF() if we won, oppF() if we lost
+  var iWon=onlineMode?(winner===myF()):(winner===p1);
+  var oppIsMe=!iWon;
+
   if(winner===p1)score[0]++;else score[1]++;
   updateBars();
   document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
 
-  if(onlineMode&&isHost){
-    realtimeChannel.send({type:'broadcast',event:'gameover',payload:{
-      hostWon:winner===p1,ko:true,round:round
-    }});
-  }
-
-  var earned=localWon?(50+round*15):5;
+  var earned=iWon?(50+round*15):5;
   sessionTC+=earned;player.tc+=earned;
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
 
   if(!onlineMode){
     player.stats.kos+=1;
-    if(localWon){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
+    if(iWon){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
     else{player.stats.losses++;player.history.unshift({result:'loss',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
     player.stats.totalTC+=earned;
     saveProfile();
+  } else {
+    handleOnlineGameOver(iWon,true);
+    return;
   }
 
-  var wname=onlineMode?(isHost?(winner===p1?player.name:opponentName):''):(winner===p1?player.name:'CPU IRON');
-  var tcMsg=localWon?('\n+'+earned+' TC EARNED!'):'';
+  var wname=winner===p1?player.name:'CPU IRON';
+  var tcMsg=iWon?('\n+'+earned+' TC EARNED!'):'';
   setTimeout(function(){
-    if(!onlineMode&&round<=maxRounds){
+    if(round<=maxRounds){
       showGameOverlay('K.O.!!!\n'+wname+' WINS!'+tcMsg,'NEXT ROUND',function(){beginRound();});
     } else {
       var fw=score[0]>score[1]?player.name:(score[1]>score[0]?'CPU IRON':'DRAW!');
-      showGameOverlay('FINAL!\n'+(onlineMode?wname:fw)+' WINS!\n+'+sessionTC+' TC TOTAL','FIGHT AGAIN',function(){startGame();});
+      showGameOverlay('FINAL!\n'+fw+' WINS!\n+'+sessionTC+' TC TOTAL','FIGHT AGAIN',function(){startGame();});
     }
   },1700);
 }
@@ -1413,30 +1321,55 @@ function drawKOText(){
 }
 
 /* ── UPDATE ── */
-var guestLastDir=0;
 function update(){
   if(!p1||!p2)return;
 
-  if(onlineMode&&!isHost){
-    // Guest: send keyboard movement to host each frame direction changes
-    var wantDir=0;
-    if(K['KeyA']||K['ArrowLeft'])  wantDir=1;   // toward p1 = left key
-    if(K['KeyD']||K['ArrowRight']) wantDir=-1;  // away from p1 = right key
-    if(wantDir!==guestLastDir){
-      guestLastDir=wantDir;
-      guestSendInput('move',{dir:wantDir});
+  // ── MY FIGHTER movement (works for both host=p1 and guest=p2) ──
+  var me=myF(), opp=oppF();
+  if(me && !me.stunned && me.state!=='ko' && me.state!=='hurt'){
+    me.walkDir=0;
+    var goLeft =(K['KeyA']||K['ArrowLeft']);
+    var goRight=(K['KeyD']||K['ArrowRight']);
+    if(isHost){
+      // Host is p1 (left side): A=move left, D=move right toward p2
+      if(goLeft  && me.x>100)       { me.x-=2.5; me.walkDir=-1; }
+      if(goRight && me.x<opp.x-70)  { me.x+=2.5; me.walkDir=1;  }
+    } else {
+      // Guest is p2 (right side): A=move left toward p1, D=move right
+      if(goLeft  && me.x>opp.x+70)  { me.x-=2.5; me.walkDir=-1; }
+      if(goRight && me.x<W-70)       { me.x+=2.5; me.walkDir=1;  }
     }
-    return;
   }
 
-  if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
-    p1.walkDir=0;
-    if((K['KeyA']||K['ArrowLeft'])&&p1.x>100){p1.x-=2.5;p1.walkDir=-1;}
-    if((K['KeyD']||K['ArrowRight'])&&p1.x<p2.x-70){p1.x+=2.5;p1.walkDir=1;}
+  // ── OPPONENT movement driven by received network inputs (online only) ──
+  if(onlineMode && opp && !opp.stunned && opp.state!=='ko' && opp.state!=='hurt'){
+    opp.walkDir=0;
+    if(!isHost){
+      // We are guest, opponent is p1 (left side)
+      if(netOppKeys.left  && opp.x>100)      { opp.x-=2.5; opp.walkDir=-1; }
+      if(netOppKeys.right && opp.x<me.x-70)  { opp.x+=2.5; opp.walkDir=1;  }
+    } else {
+      // We are host, opponent is p2 (right side)
+      if(netOppKeys.left  && opp.x>me.x+70)  { opp.x-=2.5; opp.walkDir=-1; }
+      if(netOppKeys.right && opp.x<W-70)      { opp.x+=2.5; opp.walkDir=1;  }
+    }
+    opp.blocking=netOppKeys.block;
+    // Process received attack
+    if(netOppAttack){
+      doAtk(opp,me,netOppAttack);
+      netOppAttack=null;
+    }
   }
 
-  if(onlineMode&&isHost) processGuestInputs();
+  // ── Broadcast MY inputs to opponent ──
+  if(onlineMode){
+    var myLeft =(K['KeyA']||K['ArrowLeft']);
+    var myRight=(K['KeyD']||K['ArrowRight']);
+    var myBlk  =me?me.blocking:false;
+    netBroadcastInputs(myLeft,myRight,myBlk,null); // attacks sent instantly on keypress
+  }
 
+  // ── Tick all fighters ──
   [p1,p2].forEach(function(f){
     if(f.punchCD>0)f.punchCD--;
     if(f.stunned>0)f.stunned--;
@@ -1454,7 +1387,6 @@ function update(){
   particles=np;effects=ne;
 
   if(gameActive&&!onlineMode)updateCPU();
-  if(onlineMode&&isHost)hostBroadcast();
 }
 
 /* ── MAIN LOOP ── */
@@ -1532,29 +1464,33 @@ function beginRound(){
 
 function endByTime(){
   gameActive=false;
-  var pw=p1.hp>=p2.hp;
+  // In online P2P: compare my fighter's HP vs opponent's
+  var myHP  = myF()?myF().hp:0;
+  var oppHP = oppF()?oppF().hp:0;
+  var iWon  = onlineMode?(myHP>=oppHP):(p1.hp>=p2.hp);
+  var pw=p1.hp>=p2.hp; // for score display
   if(pw)score[0]++;else score[1]++;
   document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
   updateBars();
-  if(onlineMode&&isHost){
-    realtimeChannel.send({type:'broadcast',event:'gameover',payload:{hostWon:pw,ko:false,round:round}});
-  }
-  var earned=pw?(25+round*8):2;
+  var earned=iWon?(25+round*8):2;
   sessionTC+=earned;player.tc+=earned;
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
   if(!onlineMode){
-    if(pw){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:false,tc:earned});}
+    if(iWon){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:false,tc:earned});}
     else{player.stats.losses++;player.history.unshift({result:'loss',opponent:'CPU IRON',rounds:round,ko:false,tc:earned});}
     player.stats.totalTC+=earned;
     saveProfile();
+  } else {
+    handleOnlineGameOver(iWon,false);
+    return;
   }
-  var name2=pw?player.name:'CPU IRON';
+  var name2=iWon?player.name:'CPU IRON';
   setTimeout(function(){
-    if(!onlineMode&&round<=maxRounds){
+    if(round<=maxRounds){
       showGameOverlay('TIME UP!\n'+name2+' WINS ROUND!','NEXT ROUND',function(){beginRound();});
     } else {
       var fw=score[0]>score[1]?player.name:(score[1]>score[0]?'CPU IRON':'DRAW!');
-      showGameOverlay('DECISION!\n'+(onlineMode?name2:fw)+' WINS!\n+'+sessionTC+' TC','FIGHT AGAIN',function(){startGame();});
+      showGameOverlay('DECISION!\n'+fw+' WINS!\n+'+sessionTC+' TC','FIGHT AGAIN',function(){startGame();});
     }
   },700);
 }
