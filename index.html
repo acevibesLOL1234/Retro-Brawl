@@ -202,6 +202,7 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
       <button class="mbtn purple" onclick="G.showScreen('nameScreen')">&#9998; NAME</button>
       <button class="mbtn red" onclick="G.doLogout()">&#8592; LOGOUT</button>
     </div>
+    <button onclick="G.startTutorial()" style="width:100%;margin-top:4px;padding:12px;background:#001a14;border:2px solid #00ffcc;color:#00ffcc;font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;letter-spacing:1px;">&#127891; TUTORIAL - EARN 500 TC</button>
     <div style="font-size:5px;color:#333;text-align:center;">M1/1=JAB &nbsp; M2/2=HEAVY &nbsp; SPC/F=BLOCK &nbsp; A/D=MOVE</div>
   </div>
 </div>
@@ -294,6 +295,22 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
   </div>
 </div>
 
+
+<!-- TUTORIAL OVERLAY (shown over game canvas) -->
+<div id="tutOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:400;
+  flex-direction:column;align-items:center;justify-content:center;pointer-events:none;">
+  <div id="tutBox" style="background:rgba(4,0,18,0.96);border:3px solid #00ffcc;
+    box-shadow:0 0 40px rgba(0,255,204,0.35),inset 0 0 20px rgba(0,255,204,0.04);
+    padding:24px 28px;max-width:420px;width:90%;text-align:center;pointer-events:all;
+    transform:translateY(-30px);">
+    <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#00ffcc;opacity:0.6;margin-bottom:8px;letter-spacing:2px;">TUTORIAL</div>
+    <div class="sep" style="margin-bottom:12px;"></div>
+    <div id="tutMsg" style="font-family:'Press Start 2P',monospace;font-size:8px;color:#00ffcc;line-height:2.4;margin-bottom:14px;white-space:pre-line;"></div>
+    <div id="tutHint" style="font-family:'Press Start 2P',monospace;font-size:6px;color:#ffdd00;margin-bottom:12px;min-height:14px;line-height:2;"></div>
+    <button id="tutNextBtn" class="gbtn sm" style="background:#00ffcc;color:#000;display:none;width:100%;max-width:200px;" onclick="G.tutNext()">NEXT &#9654;</button>
+  </div>
+</div>
+
 <!-- GAME -->
 <div id="gameWrapper">
   <div id="hud">
@@ -303,7 +320,7 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
     </div>
     <div class="hud-mid">
       <span id="rndTxt">ROUND 1</span>
-      <span id="tmr">20</span>
+      <span id="tmr">30</span>
       <span id="hudScr">0 - 0</span>
       <span id="hudTC">&#9670; 0 TC</span>
     </div>
@@ -384,7 +401,7 @@ var GLOVE_CATALOG=[
 
 /* ── PLAYER PROFILE ── */
 var player={
-  id:null,name:'FIGHTER',tc:500,isGuest:true,
+  id:null,name:'FIGHTER',tc:0,isGuest:true,tutorialDone:false,
   ownedShorts:['default'],equippedShorts:'default',
   ownedGloves:['classic'],equippedGloves:'classic',
   stats:{wins:0,losses:0,kos:0,rounds:0,totalTC:0},
@@ -509,7 +526,7 @@ async function doSignup(){
 
 async function doLogout(){
   if(sb)await sb.auth.signOut();
-  player={id:null,name:'FIGHTER',tc:500,isGuest:true,
+  player={id:null,name:'FIGHTER',tc:0,isGuest:true,tutorialDone:false,
     ownedShorts:['default'],equippedShorts:'default',
     ownedGloves:['classic'],equippedGloves:'classic',
     stats:{wins:0,losses:0,kos:0,rounds:0,totalTC:0},history:[]};
@@ -521,7 +538,7 @@ async function doLogout(){
 function doGuest(){
   /* Try to load local save for guests */
   var had=loadLocal();
-  if(!had){player.isGuest=true;player.name='GUEST';player.tc=500;}
+  if(!had){player.isGuest=true;player.name='GUEST';player.tc=0;player.tutorialDone=player.tutorialDone||false;}
   player.isGuest=true;
   showScreen('menuScreen');updateMenuUI();
 }
@@ -892,7 +909,7 @@ function applyHostState(s){
   if(s.effects)effects=s.effects;
   updateBars();
   document.getElementById('tmr').textContent=(timer<10?'0':'')+timer;
-  document.getElementById('tmr').style.color=timer<=5?'#ff2244':'#ffdd00';
+  document.getElementById('tmr').style.color=timer<=8?'#ff2244':'#ffdd00';
   document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
 }
 
@@ -933,7 +950,7 @@ function startOnlineGame(){
     document.getElementById('p1HudName').textContent=player.name;
     document.getElementById('p2HudName').textContent=opponentName;
   }else{
-    round=1;score=[0,0];sessionTC=0;timer=20;
+    round=1;score=[0,0];sessionTC=0;timer=30;
     var myCols=getEquippedColors();
     var myGloves=getEquippedGloveColors();
     p1=makeFighter(160,false);
@@ -1009,7 +1026,7 @@ function makeFighter(x,isCPU,isOnlineP2){
     state:'idle',stateTimer:0,punchT:0,punchTMax:1,
     jabCD:0,heavyCD:0,blockCD:0,
     punchCD:0,stunned:0,hurtFlash:0,
-    blocking:false,blockAnim:0,postBlockRestore:0,
+    blocking:false,blockAnim:0,postBlockRestore:0,blockRaisedAt:0,wasBlocking:false,
     leadHand:0,comboCount:0,lastPunchT:0,
     walkDir:0,legPhase:0,bobPhase:0,
     shortCol1:cols[0],shortCol2:cols[1],
@@ -1033,10 +1050,12 @@ document.addEventListener('keydown',function(e){
   }
   if(isJab){
     if(onlineMode&&!isHost){if(realtimeChannel)realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:'jab'}});}
+    else if(tutMode&&tutPhase===1)doBagAtk('jab');
     else doAtk(p1,p2,'jab');
   }
   if(isHeavy){
     if(onlineMode&&!isHost){if(realtimeChannel)realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:'heavy'}});}
+    else if(tutMode&&tutPhase===1)doBagAtk('heavy');
     else doAtk(p1,p2,'heavy');
   }
 });
@@ -1056,6 +1075,9 @@ canvas.addEventListener('mousedown',function(e){
     var atk=e.button===0?'jab':'heavy';
     guestKeys.atk=atk;
     if(realtimeChannel)realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:atk}});
+  }else if(tutMode&&tutPhase===1){
+    if(e.button===0)doBagAtk('jab');
+    if(e.button===2)doBagAtk('heavy');
   }else{
     if(e.button===0)doAtk(p1,p2,'jab');
     if(e.button===2)doAtk(p1,p2,'heavy');
@@ -1073,11 +1095,13 @@ function wireBtn(id,dn,up){
 wireBtn('bjab',function(){
   if(!gameActive)return;
   if(onlineMode&&!isHost){if(realtimeChannel)realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:'jab'}});}
+  else if(tutMode&&tutPhase===1)doBagAtk('jab');
   else doAtk(p1,p2,'jab');
 });
 wireBtn('bheavy',function(){
   if(!gameActive)return;
   if(onlineMode&&!isHost){if(realtimeChannel)realtimeChannel.send({type:'broadcast',event:'inp',payload:{l:lastGuestSent.l,r:lastGuestSent.r,b:!!(p2&&p2.blocking),atk:'heavy'}});}
+  else if(tutMode&&tutPhase===1)doBagAtk('heavy');
   else doAtk(p1,p2,'heavy');
 });
 wireBtn('bblock',
@@ -1132,16 +1156,19 @@ function doAtk(atk,def,type){
         doFlash('rgba(255,60,0,0.7)');doShakeEffect(16);
         def.hp=Math.max(0,def.hp-Math.floor(dmg*0.5));
       }else{
-        /* Perfect block: if guard was fully up (blockAnim>=7), stun the attacker 3s */
-        var perfectBlock=(def.blockAnim>=7);
-        if(perfectBlock){
+        /* Perfect block: guard raised 50-400ms before impact (parry timing window) */
+        var timeSinceRaise=def.blockRaisedAt>0?(Date.now()-def.blockRaisedAt):9999;
+        var perfectBlock=(timeSinceRaise>=50&&timeSinceRaise<=400);
+        /* Tutorial: track block/perfect block on p1 (def===p1 means trainer hit player) */
+        if(tutMode&&def===p1){tutTrackAtk(type,true,perfectBlock);}
+        if(perfectBlock&&!tutMode){
           atk.stunned=180;atk.state='hurt';atk.stateTimer=180;
           addFX('PERFECT BLOCK!',def.x,-85,'#00ddff');
           burst(def.x,GROUND-80,'#00ddff',14);
           doFlash('rgba(0,160,255,0.3)');doShakeEffect(8);
         }
         dmg=Math.floor(dmg*0.08);def.stamina=Math.max(0,def.stamina-22);
-        burst(def.x,GROUND-80,'#88aaff',5);addFX(perfectBlock?'':'BLOCKED!',def.x,-50,'#88aaff');
+        burst(def.x,GROUND-80,'#88aaff',5);addFX((!tutMode&&perfectBlock)?'':'BLOCKED!',def.x,-50,'#88aaff');
       }
     }else{
       burst(def.x,GROUND-88,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?18:9);
@@ -1525,7 +1552,7 @@ function drawFighter(f){
       fr(-11,-88,22,28,skin);
       fr(dir>0?-11:-3,-88,8,28,skinD);
       /* Eyes */
-      fr(dir>0?3:-9,-78,6,5,'#1a1a1a');fr(dir>0?4:-8,-77,3,3,skinL);fr(dir>0?5:-7,-77,2,2,'#ffffff');
+      fr(dir>0?3:-9,-78,6,5,'#1a1a1a');fr(dir>0?4:-8,-77,3,3,skinL);fr(dir>0?5:-9,-77,2,2,'#ffffff');
       /* Nose */
       fr(dir>0?2:-4,-72,4,6,skinD);
       /* Mouth */
@@ -1618,41 +1645,146 @@ function drawFighter(f){
 }
 
 function drawScene(){
+  if(tutMode){ drawGymScene(); return; }
+  /* ── BOXING RING ── */
   var sky=ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#08001a');sky.addColorStop(0.7,'#180030');sky.addColorStop(1,'#2a0015');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
-  /* Crowd */
   for(var i=0;i<64;i++){
     var cx2=8+i*10+Math.sin(i*7.3)*2,cy2=H-155+Math.sin(i*2.1)*12;
     var cc=['#cc2200','#0033bb','#cc8800','#228800','#880088','#cccccc'][i%6];
-    /* body */
-    fr(cx2-4,cy2-18,8,18,cc);
-    /* head */
-    fr(cx2-4,cy2-30,8,12,'#c87040');
-    /* arms waving */
+    fr(cx2-4,cy2-18,8,18,cc);fr(cx2-4,cy2-30,8,12,'#c87040');
     var wv=Math.sin(i*0.8+Date.now()*0.003)*8;
-    fr(cx2-8,cy2-24+wv,4,10,cc);
-    fr(cx2+4,cy2-24-wv,4,10,cc);
+    fr(cx2-8,cy2-24+wv,4,10,cc);fr(cx2+4,cy2-24-wv,4,10,cc);
   }
-  /* Ring posts */
   fr(20,GROUND-120,10,130,'#ffdd00');fr(W-30,GROUND-120,10,130,'#ffdd00');
-  /* Ropes */
   for(var j=0;j<3;j++){
     var ry=GROUND-50-j*32;
     ctx.strokeStyle=j===1?'#cc2200':'#ffdd00';ctx.lineWidth=4;
     ctx.beginPath();ctx.moveTo(20,ry);ctx.lineTo(W-20,ry);ctx.stroke();
   }
-  /* Ring canvas */
-  fr(20,GROUND,W-40,8,'#cc3300');
-  fr(20,GROUND,W-40,3,'#ffdd00');
-  fr(0,GROUND,W,6,'#cc2200');
-  /* Floor mat */
-  fr(20,GROUND+4,W-40,60,'#8B1a00');
-  /* Center line */
-  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=2;
-  ctx.setLineDash([8,8]);
+  fr(20,GROUND,W-40,8,'#cc3300');fr(20,GROUND,W-40,3,'#ffdd00');
+  fr(0,GROUND,W,6,'#cc2200');fr(20,GROUND+4,W-40,60,'#8B1a00');
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=2;ctx.setLineDash([8,8]);
   ctx.beginPath();ctx.moveTo(W/2,GROUND);ctx.lineTo(W/2,GROUND+60);ctx.stroke();
   ctx.setLineDash([]);
+}
+
+function drawGymScene(){
+  /* ── GYM BACKGROUND ── fill full canvas first */
+  fr(0,0,W,H,'#0d0808');
+  /* ceiling */
+  fr(0,0,W,H*0.55,'#1a1008');
+  /* brick back wall */
+  var brickW=40,brickH=18;
+  for(var row=0;row<9;row++){
+    for(var col=0;col<18;col++){
+      var ox=(row%2===0)?0:brickW/2;
+      var bx2=col*brickW-ox,by2=row*brickH;
+      ctx.fillStyle=(row+col)%3===0?'#2a1208':'#221008';
+      ctx.fillRect(bx2+1,by2+1,brickW-2,brickH-2);
+      ctx.fillStyle='#1a0a04';
+      ctx.fillRect(bx2,by2,brickW,1);
+      ctx.fillRect(bx2,by2,1,brickH);
+    }
+  }
+  /* GYM banner */
+  fr(180,14,280,32,'#1a0000');
+  fr(182,16,276,28,'#2a0000');
+  ctx.font='bold 11px "Press Start 2P"';ctx.fillStyle='#ffdd00';ctx.textAlign='center';
+  ctx.fillText('IRON GYM',W/2,36);ctx.textAlign='left';
+  fr(182,44,276,2,'#ffdd00');
+
+  /* ── EQUIPMENT IN BACKGROUND ── */
+  /* Speed bag on right wall - only in bag phase */
+  if(tutPhase===1){
+    fr(520,80,8,30,'#888'); /* chain */
+    fr(504,110,40,50,'#8B3300'); /* speed bag body */
+    fr(506,112,36,46,'#a04400');
+    fr(514,112,12,46,'#cc5500'); /* shine */
+    fr(502,108,44,8,'#555'); /* mount */
+  }
+  /* Weight rack left side */
+  fr(20,120,70,6,'#333');
+  fr(22,126,8,60,'#555');fr(22,122,8,8,'#444');
+  fr(60,126,8,60,'#555');fr(60,122,8,8,'#444');
+  /* weights */
+  for(var wi=0;wi<3;wi++){
+    fr(30+wi*14,130,10,40,'#444');
+    fr(31+wi*14,132,8,36,'#555');
+  }
+  /* Poster on left wall */
+  fr(8,60,60,80,'#0a0000');fr(10,62,56,76,'#1a0000');
+  ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='#ff2244';ctx.textAlign='center';
+  ctx.fillText('FIGHT',38,90);ctx.fillText('HARD',38,102);ctx.textAlign='left';
+  /* Poster on right wall */
+  fr(W-68,60,60,80,'#0a0000');fr(W-66,62,56,76,'#001a00');
+  ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='#00cc55';ctx.textAlign='center';
+  ctx.fillText('TRAIN',W-38,90);ctx.fillText('WIN',W-38,102);ctx.textAlign='left';
+
+  /* ── OVERHEAD GYM LIGHTS ── */
+  var lightPositions=[120,320,520];
+  lightPositions.forEach(function(lx){
+    /* light fixture */
+    fr(lx-15,0,30,12,'#333');
+    fr(lx-18,10,36,6,'#555');
+    /* light cone */
+    ctx.save();ctx.globalAlpha=0.07+Math.sin(Date.now()*0.002)*0.01;
+    ctx.fillStyle='#ffffcc';
+    ctx.beginPath();
+    ctx.moveTo(lx-18,16);ctx.lineTo(lx+18,16);
+    ctx.lineTo(lx+80,GROUND);ctx.lineTo(lx-80,GROUND);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+    /* bulb glow */
+    ctx.save();ctx.globalAlpha=0.9;
+    ctx.fillStyle='#ffffaa';ctx.fillRect(lx-8,11,16,5);
+    ctx.restore();
+  });
+
+  /* ── WOOD FLOOR ── */
+  /* floorboards */
+  for(var fi=0;fi<W;fi+=32){
+    ctx.fillStyle=fi%64===0?'#5a3a10':'#4a2e08';
+    ctx.fillRect(fi,GROUND,32,H-GROUND);
+    ctx.fillStyle='#3a2006';
+    ctx.fillRect(fi,GROUND,1,H-GROUND);
+  }
+  /* floor sheen */
+  ctx.save();ctx.globalAlpha=0.07;
+  ctx.fillStyle='#ffffff';
+  lightPositions.forEach(function(lx){
+    ctx.beginPath();ctx.ellipse(lx,GROUND+2,70,8,0,0,Math.PI*2);ctx.fill();
+  });
+  ctx.restore();
+  /* floor edge */
+  fr(0,GROUND,W,3,'#3a2006');
+
+  /* ── MIRROR on back wall (center) ── */
+  fr(W/2-50,50,100,H*0.45,'#0a1a2a');
+  fr(W/2-48,52,96,H*0.43,'#0d2030');
+  /* mirror frame */
+  ctx.strokeStyle='#888';ctx.lineWidth=3;
+  ctx.strokeRect(W/2-50,50,100,H*0.45);
+  /* mirror reflection - faint horizontal lines */
+  ctx.save();ctx.globalAlpha=0.06;
+  ctx.fillStyle='#aaddff';
+  for(var mi=0;mi<8;mi++) ctx.fillRect(W/2-48,52+mi*22,96,10);
+  ctx.restore();
+  ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='rgba(100,160,200,0.4)';
+  ctx.textAlign='center';ctx.fillText('MIRROR',W/2,H*0.5-5);ctx.textAlign='left';
+
+  /* ── PROMPT: walk up to bag ── */
+  if(tutPhase===1&&p1){
+    var dist=Math.abs(p1.x-bag.x);
+    if(dist>120){
+      ctx.save();ctx.globalAlpha=0.85+Math.sin(Date.now()*0.006)*0.15;
+      ctx.font='bold 7px "Press Start 2P"';ctx.fillStyle='#00ffcc';ctx.textAlign='center';
+      ctx.fillText('WALK UP TO THE BAG  A/D',W/2,GROUND-10);
+      ctx.restore();
+    }
+    ctx.textAlign='left';
+  }
 }
 
 function drawEffects(){
@@ -1726,7 +1858,8 @@ function drawKOText(){
 
 /* ── UPDATE ── */
 function update(){
-  if(!p1||!p2)return;
+  if(!p1)return;
+  if(!p2&&!tutMode)return; /* allow update with no p2 in tutorial bag phase */
   if(onlineMode&&!isHost){
     guestSendInputs();
     var np=[],ne=[],nb=[],nsw=[];
@@ -1739,13 +1872,14 @@ function update(){
   /* p1 movement */
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
     p1.walkDir=0;
+    var rightLimit=tutMode?(tutPhase===1?bag.x+20:p2?p2.x-60:W-80):p2?p2.x-60:W-80;
     if((K['KeyA']||K['ArrowLeft'])&&p1.x>60){p1.x-=2.5;p1.walkDir=-1;}
-    if((K['KeyD']||K['ArrowRight'])&&p1.x<p2.x-60){p1.x+=2.5;p1.walkDir=1;}
+    if((K['KeyD']||K['ArrowRight'])&&p1.x<rightLimit){p1.x+=2.5;p1.walkDir=1;}
   }
   /* p2 movement */
-  if(onlineMode){applyGuestInputs();}else{updateCPU();}
+  if(onlineMode){applyGuestInputs();}else if(tutMode){updateTrainer();}else{updateCPU();}
   /* Tick all fighter state */
-  [p1,p2].forEach(function(f){
+  [p1,p2].filter(Boolean).forEach(function(f){
     if(f.punchCD>0)f.punchCD--;
     if(f.punchT>0)f.punchT--;
     if(f.jabCD>0)f.jabCD--;
@@ -1764,11 +1898,18 @@ function update(){
     if(!f.blocking)f.stamina=Math.min(100,f.stamina+0.12);
     if(f.blocking)f.stamina=Math.max(0,f.stamina-0.18); /* holding block drains stamina */
     /* Block anim lerp */
-    if(f.blocking){if(f.blockAnim<8)f.blockAnim=Math.min(8,f.blockAnim+2);}
-    else{if(f.blockAnim>0)f.blockAnim=Math.max(0,f.blockAnim-2);}
+    if(f.blocking){
+      if(f.blockAnim<8)f.blockAnim=Math.min(8,f.blockAnim+2);
+      /* Only count as 'held' once fully raised */
+      /* track when guard first became fully raised */
+      if(f.blockAnim>=8&&!f.wasBlocking){f.blockRaisedAt=Date.now();f.wasBlocking=true;}
+    }else{
+      if(f.blockAnim>0)f.blockAnim=Math.max(0,f.blockAnim-2);
+      f.wasBlocking=false;f.blockRaisedAt=0;
+    }
   });
-  if(shakeDur>0){shakeX=(Math.random()-.5)*shakeAmt;shakeY=(Math.random()-.5)*shakeAmt;shakeAmt*=0.8;shakeDur--;}
-  else{shakeX=0;shakeY=0;}
+  if(!tutMode&&shakeDur>0){shakeX=(Math.random()-.5)*shakeAmt;shakeY=(Math.random()-.5)*shakeAmt;shakeAmt*=0.8;shakeDur--;}
+  else{shakeX=0;shakeY=0;if(tutMode)shakeDur=0;}
   var np=[],ne=[],nb=[],nsw=[];
   for(var i=0;i<particles.length;i++){var pt=particles[i];pt.x+=pt.vx;pt.y+=pt.vy;pt.vy+=0.28;pt.life--;if(pt.life>0)np.push(pt);}
   for(var j=0;j<effects.length;j++){var ef=effects[j];ef.relY-=0.55;ef.life--;if(ef.life>0)ne.push(ef);}
@@ -1784,7 +1925,7 @@ function update(){
   /* Passive sweat drip from fighters while active */
   if(gameActive&&p1&&p2){
     if(Math.random()<0.04)sweatBurst(p1.x+(Math.random()-.5)*10,GROUND-70+Math.random()*30,1);
-    if(Math.random()<0.04)sweatBurst(p2.x+(Math.random()-.5)*10,GROUND-70+Math.random()*30,1);
+    if(p2&&Math.random()<0.04)sweatBurst(p2.x+(Math.random()-.5)*10,GROUND-70+Math.random()*30,1);
     /* Heavy punch charge particles - orbit the fist during windup */
     function spawnCharge(f){
       if(f.state!=='heavy')return;
@@ -1808,7 +1949,7 @@ function update(){
         }
       }
     }
-    spawnCharge(p1);spawnCharge(p2);
+    spawnCharge(p1);if(p2)spawnCharge(p2);
   }
   if(onlineMode)hostBroadcastState();
 }
@@ -1816,10 +1957,13 @@ function update(){
 /* ── MAIN LOOP ── */
 function loop(){
   update();
+  ctx.clearRect(0,0,W,H); /* clear full canvas every frame - prevents trails */
   ctx.save();
   ctx.translate(Math.round(shakeX),Math.round(shakeY));
   drawScene();
-  if(p2)drawFighter(p2);
+  if(tutMode&&tutPhase===1)drawBag();
+  if(tutMode&&tutPhase===2&&p2)drawFighter(p2);
+  if(!tutMode&&p2)drawFighter(p2);
   if(p1)drawFighter(p1);
   drawEffects();
   drawStamBars();
@@ -1871,20 +2015,20 @@ function beginRound(){
   cpuIntent='approach';cpuIT=0;
   particles=[];effects=[];bloodDrops=[];sweatDrops=[];
   document.getElementById('rndTxt').textContent='ROUND '+round;
-  document.getElementById('tmr').textContent='20';
+  document.getElementById('tmr').textContent='30';
   document.getElementById('tmr').style.color='#ffdd00';
   document.getElementById('p1HudName').textContent=player.name;
   document.getElementById('p2HudName').textContent=onlineMode?opponentName:'CPU IRON';
   document.getElementById('gameOverlay').classList.remove('show');
   updateBars();
-  gameActive=true;timer=20;
+  gameActive=true;timer=30;
   clearInterval(timerID);
   if(!onlineMode||isHost){
     timerID=setInterval(function(){
       if(!gameActive)return;
       timer--;
       document.getElementById('tmr').textContent=(timer<10?'0':'')+timer;
-      document.getElementById('tmr').style.color=timer<=5?'#ff2244':'#ffdd00';
+      document.getElementById('tmr').style.color=timer<=8?'#ff2244':'#ffdd00';
       if(timer<=0){clearInterval(timerID);endByTime();}
     },1000);
   }
@@ -1941,6 +2085,267 @@ function goToMenu(){
   showScreen('authScreen');
 })();
 
+
+/* ════════════════════════════════════════════════
+   TUTORIAL SYSTEM
+   Phase 1: Punching bag - learn jab & heavy
+   Phase 2: Sparring - learn block
+════════════════════════════════════════════════ */
+var tutMode=false;
+var tutPhase=0; /* 0=off, 1=bag, 2=spar */
+var tutStep=0;
+var tutWaiting=false; /* waiting for player action */
+var tutJabsDone=0,tutHeaviesDone=0,tutBlocksDone=0,tutPerfectsDone=0;
+
+/* Punching bag: a stationary target drawn on canvas */
+var bag={x:480,hp:100,hurtFlash:0,swingAnim:0,swingDir:1};
+
+var TUT_STEPS=[
+  {phase:1,msg:"WELCOME TO THE GYM!\nLET'S LEARN THE BASICS.",hint:'PRESS NEXT TO CONTINUE',wait:false},
+  {phase:1,msg:"THIS IS A PUNCHING BAG.\nHIT IT WITH A JAB!",hint:'PRESS M1 OR KEY [1] TO JAB',wait:true,need:'jab',count:3},
+  {phase:1,msg:"NICE WORK! NOW TRY\nA HEAVY PUNCH!",hint:'PRESS M2 OR KEY [2] FOR HEAVY',wait:true,need:'heavy',count:2},
+  {phase:1,msg:"FEEL THE DIFFERENCE?\nHEAVY IS SLOWER BUT\nDOES MORE DAMAGE.",hint:'PRESS NEXT TO CONTINUE',wait:false},
+  {phase:2,msg:"NOW LET'S SPAR.\nA TRAINING PARTNER\nWILL ATTACK YOU.",hint:'PRESS NEXT TO START SPARRING',wait:false},
+  {phase:2,msg:"BLOCK THE INCOMING\nATTACKS!",hint:'HOLD SPACE OR [F] TO BLOCK',wait:true,need:'block',count:3},
+  {phase:2,msg:"YOU'RE A NATURAL!\nTHAT'S THE BASICS.\nNOW GO FIGHT FOR REAL!",hint:'PRESS FINISH TO CLAIM YOUR REWARD',wait:false,finish:true,reward:true}
+];
+
+function tutGetStep(){return TUT_STEPS[tutStep]||null;}
+
+function startTutorial(){
+  tutMode=true;tutPhase=1;tutStep=0;
+  tutJabsDone=0;tutHeaviesDone=0;tutBlocksDone=0;tutPerfectsDone=0;
+  bag={x:480,hp:100,hurtFlash:0,swingAnim:0,swingDir:1};
+  onlineMode=false;
+  /* Launch the game wrapper */
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('gameWrapper').classList.add('active');
+  document.getElementById('onlinePingBadge').style.display='none';
+  /* Setup fighters */
+  p1=makeFighter(160,false,false);
+  p2=null; /* no p2 in bag phase */
+  particles=[];effects=[];bloodDrops=[];sweatDrops=[];
+  score=[0,0];round=1;sessionTC=0;timer=30;
+  document.getElementById('rndTxt').textContent='TUTORIAL';
+  document.getElementById('tmr').textContent='--';
+  document.getElementById('tmr').style.color='#00ffcc';
+  document.getElementById('hudScr').textContent='';
+  document.getElementById('hudTC').textContent='◆ '+player.tc+' TC';
+  document.getElementById('p1HudName').textContent=player.name;
+  document.getElementById('p2HudName').textContent='BAG';
+  document.getElementById('hf1').style.width='100%';
+  document.getElementById('hf2').style.width='100%';
+  document.getElementById('gameOverlay').classList.remove('show');
+  gameActive=true;
+  /* Show tutorial overlay */
+  document.getElementById('tutOverlay').style.display='flex';
+  tutShowStep();
+}
+
+function tutShowStep(){
+  var st=tutGetStep();
+  if(!st){tutFinish();return;}
+  document.getElementById('tutMsg').textContent=st.msg;
+  document.getElementById('tutHint').textContent=st.hint;
+  var nb=document.getElementById('tutNextBtn');
+  if(!st.wait){
+    nb.style.display='';
+    var rewardAvail=st.reward&&!player.tutorialDone;
+    nb.textContent=st.finish?(rewardAvail?'CLAIM 500 TC! ✔':'FINISH! ✔'):'NEXT ►';
+    if(rewardAvail){document.getElementById('tutMsg').textContent=st.msg+'\n\n+ 500 TC REWARD!';}
+    /* Show box for non-waiting steps */
+    document.getElementById('tutOverlay').style.display='flex';
+  }else{
+    nb.style.display='none';
+    /* Hide box while player does the action */
+    document.getElementById('tutOverlay').style.display='none';
+  }
+  tutWaiting=st.wait;
+  /* Switch phase */
+  if(st.phase===2&&tutPhase===1){
+    tutPhase=2;
+    /* Swap to sparring: create CPU opponent who only jabs slowly */
+    p2=makeFighter(500,false,false);
+    p2.isCPU=false;p2.isOnlineP2=true; /* faces left like opponent */
+    p2.shortCol1='#1133cc';p2.shortCol2='#001888';
+    p2.gloveCol='#222222';p2.gloveShadow='#000000';
+    document.getElementById('p2HudName').textContent='TRAINER';
+    document.getElementById('hf2').style.width='100%';
+    /* Move player to left side for spar */
+    if(p1)p1.x=140;
+  }
+  if(st.phase===1&&p2!==null){p2=null;}
+}
+
+function tutNext(){
+  tutStep++;
+  tutJabsDone=0;tutHeaviesDone=0;tutBlocksDone=0;tutPerfectsDone=0;
+  tutShowStep();
+}
+
+function tutFinish(){
+  tutMode=false;tutPhase=0;
+  document.getElementById('tutOverlay').style.display='none';
+  gameActive=false;
+  document.getElementById('gameWrapper').classList.remove('active');
+  /* Award 500 TC first time only */
+  if(!player.tutorialDone){
+    player.tutorialDone=true;
+    player.tc+=500;
+    saveProfile();
+  }
+  showScreen('menuScreen');updateMenuUI();
+}
+
+/* Called from doAtk when in tutorial mode */
+function tutTrackAtk(type,isBlock,isPerfect){
+  if(!tutMode||!tutWaiting)return;
+  var st=tutGetStep();if(!st||!st.need)return;
+  if(st.need==='jab'&&type==='jab'){
+    tutJabsDone++;
+    if(tutJabsDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('GREAT!',p1.x,-100,'#00ffcc');}
+    else{addFX(tutJabsDone+'/'+st.count+' JABS',p1.x,-90,'#00ffcc');}
+  }
+  if(st.need==='heavy'&&type==='heavy'){
+    tutHeaviesDone++;
+    if(tutHeaviesDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('POWERFUL!',p1.x,-100,'#ff6600');}
+    else{addFX(tutHeaviesDone+'/'+st.count+' HEAVY',p1.x,-90,'#ff6600');}
+  }
+  if(st.need==='block'&&isBlock){
+    tutBlocksDone++;
+    if(tutBlocksDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('WELL BLOCKED!',p1.x,-100,'#00ffcc');}
+    else{addFX('BLOCK '+tutBlocksDone+'/'+st.count,p1.x,-90,'#00ffcc');}
+  }
+  if(st.need==='perfect'&&isPerfect){
+    tutPerfectsDone++;
+    if(tutPerfectsDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('PERFECT!!',p1.x,-100,'#ffdd00');}
+  }
+}
+
+/* Draw the punching bag */
+function drawBag(){
+  if(!tutMode||tutPhase!==1)return;
+  var bx=bag.x, ropeTop=60; /* ceiling anchor Y */
+  var ropeLen=GROUND-ropeTop-100; /* length from ceiling to bag top */
+  /* Dampen swing naturally */
+  bag.swingAnim*=0.96;
+  if(Math.abs(bag.swingAnim)<0.001)bag.swingAnim=0;
+  var angle=bag.swingAnim;
+  /* rope pivot at ceiling center */
+  var pivotX=bx, pivotY=ropeTop;
+  var bagTopX=pivotX+Math.sin(angle)*ropeLen;
+  var bagTopY=pivotY+Math.cos(angle)*ropeLen;
+  /* Draw rope */
+  ctx.save();
+  ctx.strokeStyle='#666';ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(pivotX,pivotY);ctx.lineTo(bagTopX,bagTopY);ctx.stroke();
+  /* ceiling hook */
+  fr(pivotX-10,ropeTop-10,20,14,'#555');
+  fr(pivotX-4,ropeTop+2,8,12,'#777');
+  /* Draw bag at bottom of rope */
+  ctx.save();
+  ctx.translate(bagTopX,bagTopY);
+  ctx.rotate(angle*0.3);
+  var bw=34,bh=88;
+  /* shadow */
+  ctx.save();ctx.globalAlpha=0.18;ctx.fillStyle='#000';
+  ctx.beginPath();ctx.ellipse(2,bh+8,18,5,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  /* bag body */
+  ctx.fillStyle='#000';ctx.fillRect(-bw/2-2,0,bw+4,bh+4);
+  var bagCol=bag.hurtFlash>0?'#bb4400':'#7a2d00';
+  ctx.fillStyle=bagCol;ctx.fillRect(-bw/2,0,bw,bh);
+  /* leather highlight */
+  ctx.fillStyle='#a04000';ctx.fillRect(-bw/2+4,4,10,bh-8);
+  ctx.fillStyle='rgba(255,160,60,0.08)';ctx.fillRect(-bw/2+3,3,bw-6,bh-6);
+  /* stitching */
+  ctx.strokeStyle='#3a1400';ctx.lineWidth=1.5;
+  [bh*0.33,bh*0.66].forEach(function(sy){
+    ctx.beginPath();ctx.moveTo(-bw/2+2,sy);ctx.lineTo(bw/2-2,sy);ctx.stroke();
+  });
+  ctx.beginPath();ctx.moveTo(0,2);ctx.lineTo(0,bh-2);ctx.stroke();
+  /* top/bottom caps */
+  ctx.fillStyle='#4a1800';ctx.fillRect(-bw/2,0,bw,10);ctx.fillRect(-bw/2,bh-8,bw,8);
+  /* Lace */
+  ctx.fillStyle='#eecc88';
+  for(var li=0;li<4;li++) ctx.fillRect(-3,12+li*20,6,3);
+  /* HP bar below bag */
+  var bpct=bag.hp/100;
+  ctx.fillStyle='#111';ctx.fillRect(-bw/2,bh+6,bw,7);
+  ctx.fillStyle='#333';ctx.fillRect(-bw/2+1,bh+7,bw-2,5);
+  ctx.fillStyle=bpct>0.5?'#00cc55':bpct>0.25?'#ffaa00':'#ff2244';
+  ctx.fillRect(-bw/2+1,bh+7,Math.floor((bw-2)*bpct),5);
+  /* HP label */
+  ctx.font='5px "Press Start 2P"';ctx.fillStyle='#aaa';ctx.textAlign='center';
+  ctx.fillText('BAG HP',0,bh+22);ctx.textAlign='left';
+  ctx.restore();/* bag local */
+
+  /* "WALK CLOSER" arrow if too far */
+  var dist=p1?Math.abs(p1.x-bag.x):999;
+  var canReach=(dist<=130);
+  if(!canReach){
+    ctx.save();ctx.globalAlpha=0.7+Math.sin(Date.now()*0.008)*0.3;
+    ctx.fillStyle='#00ffcc';ctx.font='6px "Press Start 2P"';ctx.textAlign='center';
+    var arrowX=bag.x>320?bag.x-50:bag.x+50;
+    ctx.fillText(bag.x>p1.x?'>>':'<<',arrowX,bagTopY-10);
+    ctx.restore();ctx.textAlign='left';
+  }
+  ctx.restore();/* global save */
+  if(bag.hurtFlash>0)bag.hurtFlash--;
+}
+
+/* Bag hit logic (replaces doAtk for tutorial phase 1) */
+function doBagAtk(type){
+  if(!p1)return;
+  /* Must be close enough to the bag */
+  if(Math.abs(p1.x-bag.x)>130){addFX('TOO FAR!',p1.x,-60,'#ff4444');return;}
+  if(type==='jab'&&p1.jabCD>0)return;
+  if(type==='heavy'&&p1.heavyCD>0){addFX('COOLING!',p1.x,-60,'#888');return;}
+  if(p1.stamina<8){addFX('NO STAM!',p1.x,-60,'#666');return;}
+  var jabFrames=16,hvyFrames=52;
+  p1.leadHand=1-p1.leadHand;
+  p1.state=type;p1.stateTimer=type==='jab'?jabFrames:hvyFrames;
+  p1.punchT=p1.stateTimer;p1.punchTMax=p1.stateTimer;
+  p1.punchCD=p1.stateTimer;
+  if(type==='jab')p1.jabCD=JAB_CD;
+  if(type==='heavy')p1.heavyCD=HEAVY_CD;
+  p1.stamina=Math.max(0,p1.stamina-(type==='jab'?18:38));
+  var dmg=type==='jab'?6:14;
+  bag.hp=Math.max(0,bag.hp-dmg);
+  bag.hurtFlash=10;
+  /* swing handled in doBagAtk above */
+  burst(bag.x,GROUND-80,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?12:5);
+  sweatBurst(bag.x,GROUND-80,3);
+  /* Gentle swing on bag hit - no screen shake */
+  bag.swingAnim+=(type==='heavy'?0.22:0.09)*(p1.x<bag.x?1:-1);
+  bag.swingAnim=Math.max(-0.35,Math.min(0.35,bag.swingAnim));
+  addFX(type==='heavy'?'BOOM!':'JAB!',bag.x,-75,'#ffdd00');
+  tutTrackAtk(type,false,false);
+  if(bag.hp<=0){
+    bag.hp=100; /* reset bag */
+    burst(bag.x,GROUND-60,'#ffdd00',20);
+    addFX('BAG DESTROYED!',bag.x,-110,'#ffdd00');
+  }
+}
+
+/* Trainer AI for spar phase - attacks slowly so player can practice blocking */
+var trainerCD=0,trainerAttackCount=0;
+function updateTrainer(){
+  if(!p2||!p1||!gameActive||tutPhase!==2)return;
+  /* Trainer just stands still and jabs periodically */
+  p2.walkDir=0;p2.blocking=false;
+  if(trainerCD>0){trainerCD--;return;}
+  /* Only attack during the block/perfect block steps */
+  var st=tutGetStep();
+  if(!st||!st.need||st.need!=='block')return;
+  trainerCD=90; /* attack every 1.5 seconds */
+  /* Slow jab toward player */
+  doAtk(p2,p1,'jab');
+}
+
+/* Hook into doAtk to track tutorial blocks */
+var _origDoAtk=doAtk;
+
 /* ── GLOBAL G ── */
 var G={
   doLogin:doLogin,doSignup:doSignup,doLogout:doLogout,doGuest:doGuest,switchTab:switchTab,
@@ -1949,7 +2354,8 @@ var G={
   renderShop:renderShop,
   renderInventory:renderInventory,switchInvTab:switchInvTab,
   showOnlineLobby:showOnlineLobby,createRoom:createRoom,joinRoom:joinRoom,leaveOnline:leaveOnline,
-  updateMenuUI:updateMenuUI,player:player
+  updateMenuUI:updateMenuUI,player:player,
+  startTutorial:startTutorial,tutNext:tutNext
 };
 
 document.getElementById('loginBtn').addEventListener('click',function(){G.doLogin();});
