@@ -1317,7 +1317,7 @@ function sweatBurst(x,y,n){
 function burst(x,y,col,n){
   for(var i=0;i<n;i++)particles.push({x:x,y:y,vx:(Math.random()-.5)*8,vy:(Math.random()-1.1)*7,col:col,size:3+Math.random()*5,life:26+Math.random()*18});
 }
-function addFX(t,rx,ry,col){effects.push({text:t,relX:rx,relY:ry,col:col,life:55,maxLife:55});}
+function addFX(t,rx,ry,col){effects.push({text:t,relX:rx,relY:ry,col:col,life:22,maxLife:22});}
 function doFlash(col){var el=document.getElementById('hitFlash');el.style.background=col;el.style.opacity='1';setTimeout(function(){el.style.opacity='0';},95);}
 function doShakeEffect(amt){shakeAmt=amt;shakeDur=15;}
 
@@ -1872,9 +1872,13 @@ function update(){
   /* p1 movement */
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
     p1.walkDir=0;
-    var rightLimit=tutMode?(tutPhase===1?bag.x+20:p2?p2.x-60:W-80):p2?p2.x-60:W-80;
-    if((K['KeyA']||K['ArrowLeft'])&&p1.x>60){p1.x-=2.5;p1.walkDir=-1;}
-    if((K['KeyD']||K['ArrowRight'])&&p1.x<rightLimit){p1.x+=2.5;p1.walkDir=1;}
+    /* In tutorial: lock movement while reading instruction (not waiting for action) */
+    var moveLocked=tutMode&&!tutWaiting;
+    if(!moveLocked){
+      var rightLimit=tutMode?(tutPhase===1?bag.x+20:p2?p2.x-60:W-80):p2?p2.x-60:W-80;
+      if((K['KeyA']||K['ArrowLeft'])&&p1.x>60){p1.x-=2.5;p1.walkDir=-1;}
+      if((K['KeyD']||K['ArrowRight'])&&p1.x<rightLimit){p1.x+=2.5;p1.walkDir=1;}
+    }
   }
   /* p2 movement */
   if(onlineMode){applyGuestInputs();}else if(tutMode){updateTrainer();}else{updateCPU();}
@@ -2101,13 +2105,15 @@ var tutJabsDone=0,tutHeaviesDone=0,tutBlocksDone=0,tutPerfectsDone=0;
 var bag={x:480,hp:100,hurtFlash:0,swingAnim:0,swingDir:1};
 
 var TUT_STEPS=[
-  {phase:1,msg:"WELCOME TO THE GYM!\nLET'S LEARN THE BASICS.",hint:'PRESS NEXT TO CONTINUE',wait:false},
-  {phase:1,msg:"THIS IS A PUNCHING BAG.\nHIT IT WITH A JAB!",hint:'PRESS M1 OR KEY [1] TO JAB',wait:true,need:'jab',count:3},
-  {phase:1,msg:"NICE WORK! NOW TRY\nA HEAVY PUNCH!",hint:'PRESS M2 OR KEY [2] FOR HEAVY',wait:true,need:'heavy',count:2},
-  {phase:1,msg:"FEEL THE DIFFERENCE?\nHEAVY IS SLOWER BUT\nDOES MORE DAMAGE.",hint:'PRESS NEXT TO CONTINUE',wait:false},
-  {phase:2,msg:"NOW LET'S SPAR.\nA TRAINING PARTNER\nWILL ATTACK YOU.",hint:'PRESS NEXT TO START SPARRING',wait:false},
-  {phase:2,msg:"BLOCK THE INCOMING\nATTACKS!",hint:'HOLD SPACE OR [F] TO BLOCK',wait:true,need:'block',count:3},
-  {phase:2,msg:"YOU'RE A NATURAL!\nTHAT'S THE BASICS.\nNOW GO FIGHT FOR REAL!",hint:'PRESS FINISH TO CLAIM YOUR REWARD',wait:false,finish:true,reward:true}
+  /* 0 */ {phase:1,msg:"WELCOME TO THE GYM!\nLET'S LEARN THE BASICS.",hint:'PRESS NEXT TO CONTINUE',wait:false},
+  /* 1 */ {phase:1,msg:"WALK UP TO THE BAG\nAND THROW 3 JABS!",hint:'PRESS NEXT WHEN READY',wait:false},
+  /* 2 */ {phase:1,msg:"",hint:'JAB - M1 OR [1]',wait:true,need:'jab',count:3},
+  /* 3 */ {phase:1,msg:"NOW STEP BACK AND\nTRY 2 HEAVY PUNCHES!",hint:'PRESS NEXT WHEN READY',wait:false},
+  /* 4 */ {phase:1,msg:"",hint:'HEAVY - M2 OR [2]',wait:true,need:'heavy',count:2},
+  /* 5 */ {phase:1,msg:"HEAVY HITS HARDER\nBUT IS SLOWER.",hint:'PRESS NEXT TO CONTINUE',wait:false},
+  /* 6 */ {phase:2,msg:"SPAR TIME!\nA TRAINER WILL ATTACK.\nBLOCK THEIR HITS!",hint:'PRESS NEXT TO START',wait:false},
+  /* 7 */ {phase:2,msg:"",hint:'BLOCK - SPACE OR [F]',wait:true,need:'block',count:3},
+  /* 8 */ {phase:2,msg:"YOU'RE A NATURAL!\nNOW GO FIGHT FOR REAL!",hint:'PRESS FINISH TO CLAIM YOUR REWARD',wait:false,finish:true,reward:true}
 ];
 
 function tutGetStep(){return TUT_STEPS[tutStep]||null;}
@@ -2157,7 +2163,6 @@ function tutShowStep(){
     document.getElementById('tutOverlay').style.display='flex';
   }else{
     nb.style.display='none';
-    /* Hide box while player does the action */
     document.getElementById('tutOverlay').style.display='none';
   }
   tutWaiting=st.wait;
@@ -2178,8 +2183,18 @@ function tutShowStep(){
 }
 
 function tutNext(){
+  var prevStep=tutStep;
   tutStep++;
   tutJabsDone=0;tutHeaviesDone=0;tutBlocksDone=0;tutPerfectsDone=0;
+  /* After jab action (step 2): tutTrackAtk already showed step 3 msg, skip to step 4 (heavy action) */
+  if(prevStep===2){
+    tutStep=4;
+    if(p1){p1.x=120;particles=[];effects=[];bag.hp=100;bag.swingAnim=0;}
+  }
+  /* After heavy action (step 4): tutTrackAtk showed step 5 msg, skip to step 6 (spar intro) */
+  if(prevStep===4){tutStep=6;}
+  /* After block action (step 7): tutTrackAtk showed final msg, skip to step 8 (finish) */
+  if(prevStep===7){tutStep=8;}
   tutShowStep();
 }
 
@@ -2203,17 +2218,17 @@ function tutTrackAtk(type,isBlock,isPerfect){
   var st=tutGetStep();if(!st||!st.need)return;
   if(st.need==='jab'&&type==='jab'){
     tutJabsDone++;
-    if(tutJabsDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('GREAT!',p1.x,-100,'#00ffcc');}
+    if(tutJabsDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent='NICE WORK!\nNOW STEP BACK AND\nTRY 2 HEAVY PUNCHES!';document.getElementById('tutHint').textContent='PRESS NEXT WHEN READY';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('GREAT!',p1.x,-100,'#00ffcc');}
     else{addFX(tutJabsDone+'/'+st.count+' JABS',p1.x,-90,'#00ffcc');}
   }
   if(st.need==='heavy'&&type==='heavy'){
     tutHeaviesDone++;
-    if(tutHeaviesDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('POWERFUL!',p1.x,-100,'#ff6600');}
+    if(tutHeaviesDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent='HEAVY HITS HARDER\nBUT IS SLOWER.';document.getElementById('tutHint').textContent='PRESS NEXT TO CONTINUE';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('POWERFUL!',p1.x,-100,'#ff6600');}
     else{addFX(tutHeaviesDone+'/'+st.count+' HEAVY',p1.x,-90,'#ff6600');}
   }
   if(st.need==='block'&&isBlock){
     tutBlocksDone++;
-    if(tutBlocksDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('WELL BLOCKED!',p1.x,-100,'#00ffcc');}
+    if(tutBlocksDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent="YOU'RE A NATURAL!\nNOW GO FIGHT FOR REAL!";document.getElementById('tutHint').textContent='PRESS FINISH TO CLAIM YOUR REWARD';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';document.getElementById('tutNextBtn').textContent='CLAIM 500 TC! ✔';addFX('WELL BLOCKED!',p1.x,-100,'#00ffcc');}
     else{addFX('BLOCK '+tutBlocksDone+'/'+st.count,p1.x,-90,'#00ffcc');}
   }
   if(st.need==='perfect'&&isPerfect){
@@ -2314,6 +2329,7 @@ function doBagAtk(type){
   bag.hp=Math.max(0,bag.hp-dmg);
   bag.hurtFlash=10;
   /* swing handled in doBagAtk above */
+  effects=[]; /* clear old hit text before showing new one */
   burst(bag.x,GROUND-80,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?12:5);
   sweatBurst(bag.x,GROUND-80,3);
   /* Gentle swing on bag hit - no screen shake */
