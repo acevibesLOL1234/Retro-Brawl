@@ -148,6 +148,49 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
 /* CELEBRATION */
 #celebrationOverlay{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:250;display:none;}
 #celebrationOverlay.show{display:block;}
+
+/* ═══ SETTINGS SCREEN ═══ */
+.lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:400px;}
+.lang-btn{background:#0a0010;border:3px solid #2a0030;color:#aaa;
+  font-family:'Press Start 2P',monospace;font-size:7px;padding:14px 6px;cursor:pointer;text-align:center;}
+.lang-btn:hover{border-color:var(--gold);color:var(--gold);}
+.lang-btn.active{border-color:var(--green);color:var(--green);background:#001a00;}
+.settings-row{display:flex;justify-content:space-between;align-items:center;
+  width:100%;background:#0a0010;border:2px solid #1a0030;padding:10px 14px;}
+.settings-label{font-size:7px;color:#aaa;}
+.settings-val{font-size:7px;color:var(--gold);}
+
+/* ═══ UPDATE LOG ═══ */
+.patch-card{width:100%;background:#05000f;border:2px solid #1a0030;padding:12px 14px;}
+.patch-ver{font-size:9px;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.patch-badge{font-size:5px;background:var(--green);color:#000;padding:2px 6px;}
+.patch-date{font-size:5px;color:#555;}
+.patch-entry{font-size:6px;color:#888;line-height:2.4;padding-left:8px;border-left:2px solid #2a0030;}
+.patch-entry span{color:#aaa;}
+.patch-entry .new{color:var(--green);}
+.patch-entry .fix{color:var(--orange);}
+.patch-entry .change{color:var(--blue);}
+
+/* ═══ CREDITS ═══ */
+.credits-card{width:100%;background:#05000f;border:2px solid #1a0030;padding:14px;}
+.credits-role{font-size:6px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:2px;}
+.credits-name{font-size:10px;color:var(--gold);text-shadow:2px 2px 0 #884400;margin-bottom:10px;}
+.credits-socials{display:flex;flex-direction:column;gap:6px;width:100%;}
+.social-link{display:flex;align-items:center;gap:10px;background:#0a0010;border:2px solid #1a0030;
+  padding:9px 12px;cursor:pointer;text-decoration:none;transition:border-color 0.15s;}
+.social-link:hover{border-color:var(--gold);}
+.social-icon{font-size:10px;width:20px;text-align:center;}
+.social-text{font-size:6px;color:#bbb;font-family:'Press Start 2P',monospace;}
+.social-handle{font-size:6px;color:var(--tc);font-family:'Press Start 2P',monospace;margin-left:auto;}
+.credits-divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,#330033,transparent);margin:4px 0;}
+.credits-made{font-size:5px;color:#333;text-align:center;letter-spacing:1px;}
+.credits-glitch{font-size:11px;color:var(--purple);text-align:center;text-shadow:2px 0 var(--red),-2px 0 var(--blue);
+  animation:glitch 3s steps(1) infinite;}
+@keyframes glitch{0%,90%,100%{text-shadow:2px 0 var(--red),-2px 0 var(--blue);}
+  91%{text-shadow:-3px 0 var(--red),3px 0 var(--blue);}
+  93%{text-shadow:3px 0 #00ffff,-3px 0 var(--red);}
+  95%{text-shadow:-2px 0 var(--gold),2px 0 var(--red);}}
+
 @keyframes glow{0%,100%{text-shadow:4px 4px 0 #880000,0 0 20px #ffaa00;}50%{text-shadow:4px 4px 0 #880000,0 0 55px #ffdd00;}}
 @keyframes blink{50%{opacity:0;}}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
@@ -172,16 +215,16 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
       <input type="email" id="loginEmail" placeholder="EMAIL" autocomplete="email">
       <input type="password" id="loginPass" placeholder="PASSWORD" autocomplete="current-password">
       <div class="msg-line msg-err" id="loginErr"></div>
-      <button class="gbtn" id="loginBtn">ENTER THE RING</button>
+      <button class="gbtn" id="loginBtn" data-lang="login_btn">ENTER THE RING</button>
     </div>
     <div class="auth-form" id="signupForm" style="display:none;">
       <input type="text" id="signupName" placeholder="FIGHTER NAME (max 10)" maxlength="10" autocomplete="off">
       <input type="email" id="signupEmail" placeholder="EMAIL" autocomplete="email">
       <input type="password" id="signupPass" placeholder="PASSWORD (min 6)" autocomplete="new-password">
       <div class="msg-line msg-err" id="signupErr"></div>
-      <button class="gbtn" id="signupBtn">CREATE FIGHTER</button>
+      <button class="gbtn" id="signupBtn" data-lang="signup_btn">CREATE FIGHTER</button>
     </div>
-    <button class="gbtn ghost" id="guestBtn">PLAY AS GUEST</button>
+    <button class="gbtn ghost" id="guestBtn" data-lang="guest_btn">PLAY AS GUEST</button>
   </div>
 </div>
 
@@ -196,28 +239,31 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
     </div>
     <div class="sep"></div>
     <div class="menu-grid">
-      <button class="mbtn gold full" onclick="G.goToGame()">&#9654; VS CPU</button>
-      <button class="mbtn green full" onclick="G.showOnlineLobby()">&#127760; 2P ONLINE</button>
-      <button class="mbtn blue" onclick="G.showScreen('inventoryScreen');G.renderInventory()">&#127381; INVENTORY</button>
-      <button class="mbtn orange" onclick="G.showScreen('shopScreen');G.renderShop()">&#128722; SHOP</button>
-      <button class="mbtn purple" onclick="G.showScreen('nameScreen')">&#9998; NAME</button>
-      <button class="mbtn red" onclick="G.doLogout()">&#8592; LOGOUT</button>
+      <button class="mbtn gold full" onclick="G.goToGame()" data-lang="menu_vs_cpu">&#9654; VS CPU</button>
+      <button class="mbtn green full" onclick="G.showOnlineLobby()" data-lang="menu_online">&#127760; 2P ONLINE</button>
+      <button class="mbtn blue" onclick="G.showScreen('inventoryScreen');G.renderInventory()" data-lang="menu_inventory">&#127381; INVENTORY</button>
+      <button class="mbtn orange" onclick="G.showScreen('shopScreen');G.renderShop()" data-lang="menu_shop">&#128722; SHOP</button>
+      <button class="mbtn purple" onclick="G.showScreen('nameScreen')" data-lang="menu_name">&#9998; NAME</button>
+      <button class="mbtn red" onclick="G.doLogout()" data-lang="menu_logout">&#8592; LOGOUT</button>
+      <button class="mbtn" style="border-color:#00ffcc;color:#00ffcc;" onclick="G.showScreen('settingsScreen');G.renderSettings()" data-lang="menu_settings">&#9881; SETTINGS</button>
+      <button class="mbtn" style="border-color:#ff88ff;color:#ff88ff;" onclick="G.showScreen('creditsScreen')">&#9733; CREDITS</button>
+      <button class="mbtn full" style="border-color:#ffaa44;color:#ffaa44;" onclick="G.showScreen('updateLogScreen')" data-lang="menu_updates">&#128221; UPDATE LOG</button>
     </div>
-    <button onclick="G.startTutorial()" style="width:100%;margin-top:4px;padding:12px;background:#001a14;border:2px solid #00ffcc;color:#00ffcc;font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;letter-spacing:1px;">&#127891; TUTORIAL - EARN 500 TC</button>
-    <div style="font-size:5px;color:#333;text-align:center;">M1/1=JAB &nbsp; M2/2=HEAVY &nbsp; SPC/F=BLOCK &nbsp; A/D=MOVE</div>
+    <button onclick="G.startTutorial()" style="width:100%;margin-top:4px;padding:12px;background:#001a14;border:2px solid #00ffcc;color:#00ffcc;font-family:'Press Start 2P',monospace;font-size:8px;cursor:pointer;letter-spacing:1px;" data-lang="menu_tutorial">&#127891; TUTORIAL - EARN 500 TC</button>
+    <div id="controls_hint" style="font-size:5px;color:#333;text-align:center;">M1/1=JAB &nbsp; M2/2=HEAVY &nbsp; SPC/F=BLOCK &nbsp; A/D=MOVE</div>
   </div>
 </div>
 
 <!-- NAME SCREEN -->
 <div class="screen" id="nameScreen">
   <div class="scr-body">
-    <button class="back-btn" onclick="G.showScreen('menuScreen')">&#8592; BACK</button>
-    <div class="scr-title">FIGHTER NAME</div>
+    <button class="back-btn" onclick="G.showScreen('menuScreen')" data-lang="back">&#8592; BACK</button>
+    <div class="scr-title" data-lang="name_title">FIGHTER NAME</div>
     <div class="sep"></div>
     <input class="text-input" id="nameInput" maxlength="10" placeholder="YOUR NAME" autocomplete="off"
       style="font-size:14px;text-align:center;border-color:var(--gold);color:var(--gold);letter-spacing:2px;">
-    <div style="font-size:6px;color:#555;">MAX 10 CHARACTERS</div>
-    <button class="gbtn" style="max-width:260px;" onclick="G.saveName()">SAVE NAME</button>
+    <div style="font-size:6px;color:#555;" data-lang="name_hint">MAX 10 CHARACTERS</div>
+    <button class="gbtn" style="max-width:260px;" onclick="G.saveName()" data-lang="name_save">SAVE NAME</button>
     <div class="msg-line" id="nameMsg"></div>
   </div>
 </div>
@@ -226,7 +272,7 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
 <div class="screen" id="shopScreen">
   <div class="scr-body">
     <button class="back-btn" onclick="G.showScreen('menuScreen')">&#8592; BACK</button>
-    <div class="scr-title">GEAR SHOP</div>
+    <div class="scr-title" data-lang="shop_title">GEAR SHOP</div>
     <div style="font-size:7px;color:var(--tc);" id="shopTC">&#9670; 0 TC</div>
     <div class="sep"></div>
     <div style="font-size:7px;color:var(--gold);width:100%;">&#9651; SHORTS</div>
@@ -242,14 +288,14 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
 <div class="screen" id="inventoryScreen">
   <div class="scr-body">
     <button class="back-btn" onclick="G.showScreen('menuScreen')">&#8592; BACK</button>
-    <div class="scr-title">INVENTORY</div>
+    <div class="scr-title" data-lang="inv_title">INVENTORY</div>
     <div style="font-size:7px;color:var(--tc);" id="invTC">&#9670; 0 TC</div>
     <div class="sep"></div>
     <div class="inv-tabs">
-      <button class="inv-tab active" id="invTabShorts" onclick="G.switchInvTab('shorts')">SHORTS</button>
-      <button class="inv-tab" id="invTabGloves" onclick="G.switchInvTab('gloves')">GLOVES</button>
-      <button class="inv-tab" id="invTabStats" onclick="G.switchInvTab('stats')">STATS</button>
-      <button class="inv-tab" id="invTabHistory" onclick="G.switchInvTab('history')">HISTORY</button>
+      <button class="inv-tab active" id="invTabShorts" onclick="G.switchInvTab('shorts')" data-lang="inv_shorts">SHORTS</button>
+      <button class="inv-tab" id="invTabGloves" onclick="G.switchInvTab('gloves')" data-lang="inv_gloves">GLOVES</button>
+      <button class="inv-tab" id="invTabStats" onclick="G.switchInvTab('stats')" data-lang="inv_stats">STATS</button>
+      <button class="inv-tab" id="invTabHistory" onclick="G.switchInvTab('history')" data-lang="inv_history">HISTORY</button>
     </div>
     <div id="invShorts" style="width:100%;"><div class="item-grid" id="invGrid"></div></div>
     <div id="invGloves" style="display:none;width:100%;"><div class="glove-grid" id="invGloveGrid"></div></div>
@@ -259,39 +305,223 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
   </div>
 </div>
 
+<!-- SETTINGS SCREEN -->
+<div class="screen" id="settingsScreen">
+  <div class="scr-body">
+    <button class="back-btn" onclick="G.showScreen('menuScreen')">&#8592; BACK</button>
+    <div class="scr-title" data-lang="settings_title">&#9881; SETTINGS</div>
+    <div class="sep"></div>
+
+    <!-- Language -->
+    <div style="font-size:7px;color:var(--gold);width:100%;margin-bottom:4px;" data-lang="settings_lang_label">&#127760; LANGUAGE</div>
+    <div class="lang-grid" id="langGrid">
+      <button class="lang-btn" data-langcode="en" onclick="G.setLanguage('en')">&#127482;&#127480; ENGLISH</button>
+      <button class="lang-btn" data-langcode="es" onclick="G.setLanguage('es')">&#127466;&#127480; ESPAÑOL</button>
+      <button class="lang-btn" data-langcode="pt" onclick="G.setLanguage('pt')">&#127463;&#127479; PORTUGUÊS</button>
+      <button class="lang-btn" data-langcode="fr" onclick="G.setLanguage('fr')">&#127467;&#127479; FRANÇAIS</button>
+      <button class="lang-btn" data-langcode="ja" onclick="G.setLanguage('ja')">&#127471;&#127477; 日本語</button>
+      <button class="lang-btn" data-langcode="de" onclick="G.setLanguage('de')">&#127465;&#127466; DEUTSCH</button>
+    </div>
+
+    <div class="sep"></div>
+    <!-- Current settings display -->
+    <div class="settings-row">
+      <span class="settings-label" data-lang="settings_current_lang">CURRENT LANGUAGE</span>
+      <span class="settings-val" id="currentLangDisplay">ENGLISH</span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label" data-lang="settings_version">GAME VERSION</span>
+      <span class="settings-val" style="color:var(--green);">v1.3.0</span>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label" data-lang="settings_build">BUILD</span>
+      <span class="settings-val" style="color:#666;">2025-07-20</span>
+    </div>
+    <div class="sep"></div>
+    <div class="msg-line msg-ok" id="settingsMsg"></div>
+  </div>
+</div>
+
+<!-- UPDATE LOG SCREEN -->
+<div class="screen" id="updateLogScreen">
+  <div class="scr-body">
+    <button class="back-btn" onclick="G.showScreen('menuScreen')">&#8592; BACK</button>
+    <div class="scr-title" id="upd_title_el">&#128221; UPDATE LOG</div>
+    <div id="upd_sub_el" style="font-size:6px;color:#555;text-align:center;">RETRO BRAWL CHAMPIONSHIP EDITION</div>
+    <div class="sep"></div>
+
+    <!-- v1.3.0 -->
+    <div class="patch-card">
+      <div class="patch-ver">
+        <span>v1.3.0</span>
+        <span id="upd_latest_el" class="patch-badge">LATEST</span>
+        <span class="patch-date">FEB 25, 2026</span>
+      </div>
+      <div class="patch-entry">
+        <span class="new">&#9670; NEW</span> &mdash; <span>SETTINGS SCREEN WITH LANGUAGE SUPPORT</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>6 LANGUAGES: EN, ES, PT, FR, JA, DE</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>UPDATE LOG SCREEN</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>CREDITS SCREEN WITH CREATOR LINKS</span><br>
+        <span class="change">&#9632; IMPROVED</span> &mdash; <span>MENU LAYOUT WITH MORE OPTIONS</span>
+      </div>
+    </div>
+
+    <!-- v1.2.0 -->
+    <div class="patch-card">
+      <div class="patch-ver">
+        <span>v1.2.0</span>
+        <span class="patch-date">FEB 24, 2026</span>
+      </div>
+      <div class="patch-entry">
+        <span class="new">&#9670; NEW</span> &mdash; <span>GLOVE CUSTOMIZATION SYSTEM</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>8 GLOVE COLORS IN SHOP</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>BLOOD &amp; SWEAT PARTICLE EFFECTS</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>HEAVY PUNCH CHARGE ANIMATION</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>2P ONLINE MULTIPLAYER WITH ROOMS</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>REALTIME STATE SYNC (HOST/GUEST)</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>REMATCH SYSTEM ONLINE</span><br>
+        <span class="fix">&#9675; FIX</span> &mdash; <span>BLOCK TIMING WINDOW IMPROVED</span><br>
+        <span class="fix">&#9675; FIX</span> &mdash; <span>CPU AI RANGE EXTENDED TO FULL RING</span>
+      </div>
+    </div>
+
+    <!-- v1.1.0 -->
+    <div class="patch-card">
+      <div class="patch-ver">
+        <span>v1.1.0</span>
+        <span class="patch-date">FEB 23, 2026</span>
+      </div>
+      <div class="patch-entry">
+        <span class="new">&#9670; NEW</span> &mdash; <span>TUTORIAL MODE - EARN 500 TC</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>GYM SCENE WITH PUNCHING BAG</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>SHORTS CUSTOMIZATION - 8 COLORS</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>TC CURRENCY &amp; GEAR SHOP</span><br>
+        <span class="fix">&#9675; FIX</span> &mdash; <span>STAMINA DRAIN ON BLOCK HOLD</span>
+      </div>
+    </div>
+
+    <!-- v1.0.0 -->
+    <div class="patch-card">
+      <div class="patch-ver">
+        <span>v1.0.0</span>
+        <span class="patch-date">FEB 23, 2026</span>
+      </div>
+      <div class="patch-entry">
+        <span class="new">&#9670; NEW</span> &mdash; <span>INITIAL LAUNCH - RETRO BRAWL!</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>VS CPU MODE - 3 ROUNDS</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>JAB, HEAVY &amp; BLOCK MECHANICS</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>USER ACCOUNTS VIA SUPABASE</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>FIGHT HISTORY &amp; STATS TRACKING</span><br>
+        <span class="new">&#9670; NEW</span> &mdash; <span>MOBILE D-PAD + BUTTON CONTROLS</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CREDITS SCREEN -->
+<div class="screen" id="creditsScreen">
+  <div class="scr-body">
+    <button class="back-btn" onclick="G.showScreen('menuScreen')" data-lang="back">&#8592; BACK</button>
+    <div class="scr-title">&#9733; CREDITS</div>
+    <div class="sep"></div>
+
+    <!-- Main creator card -->
+    <div class="credits-card" style="text-align:center;border-color:#4a0060;">
+      <div id="cred_created_by" style="font-size:6px;color:#666;letter-spacing:3px;margin-bottom:8px;">CREATED BY</div>
+      <div class="credits-glitch">DEREK</div>
+      <div style="font-size:6px;color:#888;margin-top:4px;letter-spacing:2px;">DEMORIZIMONTILLA</div>
+      <div class="credits-divider"></div>
+      <div id="cred_role" style="font-size:5px;color:#444;letter-spacing:2px;">GAME DESIGNER &bull; DEVELOPER &bull; ARTIST</div>
+    </div>
+
+    <!-- Socials -->
+    <div id="cred_find" style="font-size:7px;color:var(--gold);width:100%;margin-top:4px;">&#128279; FIND ME ONLINE</div>
+    <div class="credits-socials">
+
+      <!-- TikTok -->
+      <a class="social-link" href="https://www.tiktok.com/@derekkll?lang=en" target="_blank" rel="noopener">
+        <span class="social-icon">&#9654;</span>
+        <div>
+          <div id="cred_tiktok_lbl" class="social-text" style="color:#ff0050;margin-bottom:3px;">TIKTOK</div>
+          <div class="social-handle">@derekkll</div>
+        </div>
+        <span style="font-size:8px;color:#444;margin-left:auto;">&#8599;</span>
+      </a>
+
+      <!-- YouTube -->
+      <a class="social-link" href="https://www.youtube.com/@Derekkkkl" target="_blank" rel="noopener">
+        <span class="social-icon" style="color:#ff0000;">&#9654;</span>
+        <div>
+          <div id="cred_youtube_lbl" class="social-text" style="color:#ff0000;margin-bottom:3px;">YOUTUBE</div>
+          <div class="social-handle">@Derekkkkl</div>
+        </div>
+        <span style="font-size:8px;color:#444;margin-left:auto;">&#8599;</span>
+      </a>
+
+      <!-- Instagram -->
+      <a class="social-link" href="https://www.instagram.com/derekdemorizimontilla" target="_blank" rel="noopener">
+        <span class="social-icon" style="color:#e1306c;">&#9670;</span>
+        <div>
+          <div id="cred_instagram_lbl" class="social-text" style="color:#e1306c;margin-bottom:3px;">INSTAGRAM</div>
+          <div class="social-handle">derekdemorizimontilla</div>
+        </div>
+        <span style="font-size:8px;color:#444;margin-left:auto;">&#8599;</span>
+      </a>
+
+    </div>
+
+    <div class="sep"></div>
+
+    <!-- Special thanks / tech -->
+    <div class="patch-card" style="border-color:#1a0030;">
+      <div id="cred_built_label" style="font-size:6px;color:#555;margin-bottom:8px;letter-spacing:2px;">BUILT WITH</div>
+      <div class="patch-entry">
+        <span style="color:#666;">&#9670;</span> <span>HTML5 CANVAS &amp; VANILLA JS</span><br>
+        <span style="color:#666;">&#9670;</span> <span>SUPABASE (AUTH &amp; REALTIME)</span><br>
+        <span style="color:#666;">&#9670;</span> <span>PRESS START 2P FONT (GOOGLE)</span><br>
+        <span style="color:#666;">&#9670;</span> <span>LOTS OF LOVE &amp; LATE NIGHTS &#9829;</span>
+      </div>
+    </div>
+
+    <div id="cred_copy" class="credits-made">RETRO BRAWL &copy; 2026 DEREK &bull; ALL RIGHTS RESERVED</div>
+    <div style="font-size:5px;color:#1a0030;text-align:center;">v1.3.0</div>
+  </div>
+</div>
+
 <!-- ONLINE LOBBY -->
 <div class="screen" id="onlineScreen">
   <div class="scr-body">
-    <button class="back-btn" onclick="G.leaveOnline()">&#8592; BACK</button>
-    <div class="scr-title">2P ONLINE</div>
+    <button class="back-btn" onclick="G.leaveOnline()" data-lang="back">&#8592; BACK</button>
+    <div class="scr-title" data-lang="online_title">2P ONLINE</div>
     <div class="sep"></div>
     <div id="lobbyModeSelect" style="width:100%;display:flex;flex-direction:column;gap:10px;align-items:center;">
-      <div style="font-size:7px;color:#aaa;text-align:center;line-height:2.2;">CREATE A ROOM AND SHARE<br>THE CODE WITH YOUR FRIEND</div>
-      <button class="gbtn" onclick="G.createRoom()">CREATE ROOM</button>
+      <div id="online_create_hint" style="font-size:7px;color:#aaa;text-align:center;line-height:2.2;" data-lang="online_create_hint">CREATE A ROOM AND SHARE THE CODE WITH YOUR FRIEND</div>
+      <button class="gbtn" onclick="G.createRoom()" data-lang="online_create">CREATE ROOM</button>
       <div class="sep"></div>
-      <div style="font-size:7px;color:#aaa;">OR JOIN WITH A CODE:</div>
+      <div id="online_join_hint" style="font-size:7px;color:#aaa;" data-lang="online_join_hint">OR JOIN WITH A CODE:</div>
       <input class="room-input" id="joinCodeInput" maxlength="6" placeholder="ENTER CODE" autocomplete="off"
         oninput="this.value=this.value.toUpperCase()">
-      <button class="gbtn blue" onclick="G.joinRoom()">JOIN ROOM</button>
+      <button class="gbtn blue" onclick="G.joinRoom()" data-lang="online_join">JOIN ROOM</button>
       <div class="msg-line msg-err" id="lobbyErr"></div>
     </div>
     <div id="lobbyWaiting" style="display:none;width:100%;flex-direction:column;align-items:center;gap:12px;">
-      <div style="font-size:7px;color:#aaa;">ROOM CODE</div>
+      <div style="font-size:7px;color:#aaa;" data-lang="online_room_code">ROOM CODE</div>
       <div class="room-code" id="roomCodeDisplay">------</div>
-      <div style="font-size:6px;color:#555;">SHARE THIS CODE WITH YOUR OPPONENT</div>
+      <div style="font-size:6px;color:#555;" data-lang="online_code_hint">SHARE THIS CODE WITH YOUR OPPONENT</div>
       <div class="sep"></div>
       <div class="lobby-player">
         <div class="lobby-dot ready"></div>
         <span style="font-size:7px;color:#ccc;" id="lobbyP1Name">YOU</span>
-        <span style="font-size:7px;color:#444;margin-left:auto;">P1 - RED</span>
+        <span id="lobby_p1_color" style="font-size:7px;color:#444;margin-left:auto;">P1 - RED</span>
       </div>
       <div class="lobby-player">
         <div class="lobby-dot waiting" id="lobbyP2Dot"></div>
         <span style="font-size:7px;color:#ccc;" id="lobbyP2Name">WAITING...</span>
-        <span style="font-size:7px;color:#444;margin-left:auto;">P2 - BLUE</span>
+        <span id="lobby_p2_color" style="font-size:7px;color:#444;margin-left:auto;">P2 - BLUE</span>
       </div>
       <div style="font-size:8px;color:#aaa;text-align:center;line-height:2;" id="lobbyStatus">WAITING FOR OPPONENT...</div>
-      <button class="gbtn red" onclick="G.leaveOnline()" style="max-width:200px;">CANCEL</button>
+      <button class="gbtn red" onclick="G.leaveOnline()" style="max-width:200px;" data-lang="online_cancel">CANCEL</button>
     </div>
   </div>
 </div>
@@ -304,7 +534,7 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
     box-shadow:0 0 40px rgba(0,255,204,0.35),inset 0 0 20px rgba(0,255,204,0.04);
     padding:24px 28px;max-width:420px;width:90%;text-align:center;pointer-events:all;
     transform:translateY(-30px);">
-    <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#00ffcc;opacity:0.6;margin-bottom:8px;letter-spacing:2px;">TUTORIAL</div>
+    <div id="tut_label_el" style="font-family:'Press Start 2P',monospace;font-size:6px;color:#00ffcc;opacity:0.6;margin-bottom:8px;letter-spacing:2px;">TUTORIAL</div>
     <div class="sep" style="margin-bottom:12px;"></div>
     <div id="tutMsg" style="font-family:'Press Start 2P',monospace;font-size:8px;color:#00ffcc;line-height:2.4;margin-bottom:14px;white-space:pre-line;"></div>
     <div id="tutHint" style="font-family:'Press Start 2P',monospace;font-size:6px;color:#ffdd00;margin-bottom:12px;min-height:14px;line-height:2;"></div>
@@ -337,7 +567,7 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
     <div class="go-title" id="goTitle"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
       <button class="gbtn sm" id="goMainBtn">CONTINUE</button>
-      <button class="gbtn sm ghost" id="goMenuBtn">MAIN MENU</button>
+      <button class="gbtn sm ghost" id="goMenuBtn" data-lang="go_main_menu">MAIN MENU</button>
     </div>
   </div>
   <div id="mobileUI">
@@ -351,9 +581,9 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
     </div>
     <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
       <div id="onlinePingBadge" style="display:none;" class="online-badge">
-        <span class="ping-dot" style="display:inline-block;"></span> ONLINE
+        <span class="ping-dot" style="display:inline-block;"></span> <span id="online_badge_txt">ONLINE</span>
       </div>
-      <button class="abtn menubtn" onclick="G.goToMenu()">MENU</button>
+      <button class="abtn menubtn" onclick="G.goToMenu()" data-lang="mob_menu">MENU</button>
     </div>
     <div class="act-btns">
       <div class="act-row">
@@ -368,6 +598,543 @@ body{background:var(--dark);display:flex;flex-direction:column;align-items:cente
 </div>
 
 <script>
+/* ══════════════════════════════════════════
+   LANGUAGE SYSTEM
+══════════════════════════════════════════ */
+var LANGUAGES={
+  en:{
+    name:'ENGLISH',
+    // AUTH
+    login_btn:'ENTER THE RING',signup_btn:'CREATE FIGHTER',guest_btn:'PLAY AS GUEST',
+    login_tab:'LOGIN',signup_tab:'SIGN UP',
+    email_ph:'EMAIL',pass_ph:'PASSWORD',newpass_ph:'PASSWORD (MIN 6)',
+    name_ph:'FIGHTER NAME (MAX 10)',
+    err_email_pass:'ENTER EMAIL AND PASSWORD!',err_logging:'LOGGING IN...',
+    err_wrong:'WRONG EMAIL OR PASSWORD!',err_confirm:'CHECK YOUR EMAIL TO CONFIRM!',
+    err_no_name:'ENTER A FIGHTER NAME!',err_no_email:'ENTER YOUR EMAIL!',
+    err_pass_short:'PASSWORD MIN 6 CHARS!',err_creating:'CREATING ACCOUNT...',
+    err_check_email:'CHECK YOUR EMAIL AND CLICK THE LINK, THEN LOG IN!',
+    // MENU
+    menu_vs_cpu:'\u25B6 VS CPU',menu_online:'\uD83C\uDF10 2P ONLINE',menu_inventory:'\uD83C\uDF89 INVENTORY',
+    menu_shop:'\uD83D\uDED2 SHOP',menu_name:'\u270E NAME',menu_logout:'\u2190 LOGOUT',
+    menu_settings:'\u2699 SETTINGS',menu_updates:'\uD83D\uDCDD UPDATE LOG',menu_tutorial:'\uD83C\uDF93 TUTORIAL - EARN 500 TC',
+    menu_credits:'\u2605 CREDITS',
+    menu_controls:'M1/1=JAB   M2/2=HEAVY   SPC/F=BLOCK   A/D=MOVE',
+    // NAME SCREEN
+    name_title:'FIGHTER NAME',name_hint:'MAX 10 CHARACTERS',name_save:'SAVE NAME',
+    name_saved:'NAME SAVED!',name_empty:'ENTER A NAME!',
+    // SHOP
+    shop_title:'GEAR SHOP',shop_shorts:'\u25B3 SHORTS',shop_gloves:'\u25B2 GLOVES',
+    shop_free:'FREE',shop_buy:'BUY',shop_equipped:'EQUIPPED',shop_equip:'EQUIP',
+    shop_not_enough:'NOT ENOUGH TC!',shop_purchased:'PURCHASED!',shop_gloves_bought:'GLOVES BOUGHT!',
+    // INVENTORY
+    inv_title:'INVENTORY',inv_shorts:'SHORTS',inv_gloves:'GLOVES',inv_stats:'STATS',inv_history:'HISTORY',
+    inv_no_shorts:'NO SHORTS OWNED',inv_no_gloves:'NO GLOVES OWNED',inv_no_fights:'NO FIGHTS YET',
+    inv_equipped_msg:'EQUIPPED!',
+    // STATS LABELS
+    stat_wins:'WINS',stat_losses:'LOSSES',stat_kos:"KO'S",stat_tc:'TC BALANCE',
+    // HISTORY
+    hist_win:'WIN',hist_loss:'LOSS',hist_vs:'vs',hist_ko:'KO',hist_dec:'DEC',
+    // SETTINGS
+    settings_title:'\u2699 SETTINGS',settings_lang_label:'\uD83C\uDF10 LANGUAGE',
+    settings_current_lang:'CURRENT LANGUAGE',settings_version:'GAME VERSION',settings_build:'BUILD',
+    settings_saved:'LANGUAGE SAVED!',
+    // ONLINE
+    online_title:'2P ONLINE',online_create_hint:'CREATE A ROOM AND SHARE\nTHE CODE WITH YOUR FRIEND',
+    online_create:'CREATE ROOM',online_join_hint:'OR JOIN WITH A CODE:',online_join:'JOIN ROOM',
+    online_code_hint:'SHARE THIS CODE WITH YOUR OPPONENT',online_room_code:'ROOM CODE',
+    online_waiting:'WAITING FOR OPPONENT...',online_cancel:'CANCEL',online_p1:'P1 - RED',online_p2:'P2 - BLUE',
+    online_err_sb:'SUPABASE REQUIRED',online_err_code:'ENTER 6-CHARACTER CODE',
+    // GAME HUD
+    hud_round:'ROUND',hud_cpu:'CPU IRON',hud_trainer:'TRAINER',hud_bag:'BAG',hud_tutorial:'TUTORIAL',
+    // GAME OVERLAYS
+    go_next_round:'NEXT ROUND',go_fight_again:'FIGHT AGAIN',go_main_menu:'MAIN MENU',
+    go_ko:'K.O.!!!',go_wins:'WINS!',go_time_up:'TIME UP!',go_final:'FINAL!',go_draw:'DRAW!',
+    go_tc_earned:'TC EARNED!',go_continue:'CONTINUE',go_rematch:'REMATCH?',
+    go_waiting:'WAITING FOR\nOPPONENT...',go_timed_out:'REMATCH\nTIMED OUT',
+    go_rage_quit:'OPPONENT\nRAGE QUIT!\nYOU WIN!',
+    go_you_win:'YOU WIN!',go_you_lose:'YOU LOSE!',go_accept:'ACCEPT!',
+    // FIGHT EFFECTS
+    fx_miss:'MISS!',fx_blocked:'BLOCKED!',fx_block_broken:'BLOCK BROKEN!',fx_perfect:'PERFECT BLOCK!',
+    fx_jab:'JAB!',fx_heavy:'HEAVY!!',fx_combo:'x COMBO!',fx_on_fire:'ON FIRE!!',
+    fx_ko_stam:'NO STAM!',fx_cooling:'COOLING!',fx_too_far:'TOO FAR!',
+    // TUTORIAL
+    tut_label:'TUTORIAL',
+    tut_welcome:"WELCOME TO THE GYM!\nLET'S LEARN THE BASICS.",
+    tut_jab_intro:'WALK UP TO THE BAG\nAND THROW 3 JABS!',
+    tut_jab_ready:'PRESS NEXT WHEN READY',
+    tut_jab_hint:'JAB - M1 OR [1]',
+    tut_heavy_intro:'NICE WORK!\nNOW STEP BACK AND\nTRY 2 HEAVY PUNCHES!',
+    tut_heavy_hint:'HEAVY - M2 OR [2]',
+    tut_heavy_info:'HEAVY HITS HARDER\nBUT IS SLOWER.',
+    tut_spar_intro:"SPAR TIME!\nA TRAINER WILL ATTACK.\nBLOCK THEIR HITS!",
+    tut_spar_start:'PRESS NEXT TO START',
+    tut_block_hint:'BLOCK - SPACE OR [F]',
+    tut_finish:"YOU'RE A NATURAL!\nNOW GO FIGHT FOR REAL!",
+    tut_finish_hint:'PRESS FINISH TO CLAIM YOUR REWARD',
+    tut_reward:'+ 500 TC REWARD!',
+    tut_claim:'CLAIM 500 TC! \u2714',tut_finish_btn:'FINISH! \u2714',tut_next:'NEXT \u25BA',
+    tut_great:'GREAT!',tut_powerful:'POWERFUL!',tut_well_blocked:'WELL BLOCKED!',tut_perfect_hit:'PERFECT!!',
+    tut_bag_destroyed:'BAG DESTROYED!',tut_bag_hp:'BAG HP',tut_walk:'WALK UP TO THE BAG  A/D',
+    tut_jabs_count:'/3 JABS',tut_heavies_count:'/2 HEAVY',tut_blocks_count:'/3',
+    // MOBILE BUTTONS
+    mob_jab:'JAB',mob_heavy:'HEAVY',mob_block:'BLOCK',mob_menu:'MENU',
+    // LOBBY
+    lobby_you:'(YOU)',lobby_waiting_dot:'WAITING...',
+    // CREDITS
+    cred_created_by:'CREATED BY',cred_role:'GAME DESIGNER \u2022 DEVELOPER \u2022 ARTIST',
+    cred_find:'\uD83D\uDD17 FIND ME ONLINE',cred_built:'BUILT WITH',
+    cred_tech1:'HTML5 CANVAS & VANILLA JS',cred_tech2:'SUPABASE (AUTH & REALTIME)',
+    cred_tech3:'PRESS START 2P FONT (GOOGLE)',cred_tech4:'LOTS OF LOVE & LATE NIGHTS \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 ALL RIGHTS RESERVED',
+    cred_tiktok:'TIKTOK',cred_youtube:'YOUTUBE',cred_instagram:'INSTAGRAM',
+    cred_back:'\u2190 BACK',
+    // UPDATE LOG
+    upd_title:'\uD83D\uDCDD UPDATE LOG',upd_subtitle:'RETRO BRAWL CHAMPIONSHIP EDITION',upd_latest:'LATEST',
+    // BACK BUTTON
+    back:'\u2190 BACK',
+    // ONLINE BADGE
+    online_badge:'ONLINE'
+  },
+  es:{
+    name:'ESPAÑOL',
+    login_btn:'ENTRAR AL RING',signup_btn:'CREAR LUCHADOR',guest_btn:'JUGAR SIN CUENTA',
+    login_tab:'INICIAR',signup_tab:'REGISTRO',
+    email_ph:'CORREO',pass_ph:'CONTRASEÑA',newpass_ph:'CONTRASEÑA (MIN 6)',
+    name_ph:'NOMBRE DEL LUCHADOR (MAX 10)',
+    err_email_pass:'INGRESA CORREO Y CONTRASEÑA!',err_logging:'INICIANDO SESIÓN...',
+    err_wrong:'CORREO O CONTRASEÑA INCORRECTOS!',err_confirm:'REVISA TU CORREO!',
+    err_no_name:'INGRESA UN NOMBRE!',err_no_email:'INGRESA TU CORREO!',
+    err_pass_short:'CONTRASEÑA MIN 6 CHARS!',err_creating:'CREANDO CUENTA...',
+    err_check_email:'REVISA TU CORREO Y HAZ CLIC EN EL ENLACE, LUEGO INICIA SESIÓN!',
+    menu_vs_cpu:'\u25B6 VS CPU',menu_online:'\uD83C\uDF10 2J ONLINE',menu_inventory:'\uD83C\uDF89 INVENTARIO',
+    menu_shop:'\uD83D\uDED2 TIENDA',menu_name:'\u270E NOMBRE',menu_logout:'\u2190 SALIR',
+    menu_settings:'\u2699 AJUSTES',menu_updates:'\uD83D\uDCDD ACTUALIZACIONES',menu_tutorial:'\uD83C\uDF93 TUTORIAL - GANAR 500 TC',
+    menu_credits:'\u2605 CRÉDITOS',menu_controls:'M1/1=JAB   M2/2=GOLPE   SPC/F=BLOQUEO   A/D=MOVER',
+    name_title:'NOMBRE DEL LUCHADOR',name_hint:'MAX 10 CARACTERES',name_save:'GUARDAR NOMBRE',
+    name_saved:'NOMBRE GUARDADO!',name_empty:'INGRESA UN NOMBRE!',
+    shop_title:'TIENDA DE EQUIPO',shop_shorts:'\u25B3 SHORTS',shop_gloves:'\u25B2 GUANTES',
+    shop_free:'GRATIS',shop_buy:'COMPRAR',shop_equipped:'EQUIPADO',shop_equip:'EQUIPAR',
+    shop_not_enough:'TC INSUFICIENTES!',shop_purchased:'COMPRADO!',shop_gloves_bought:'GUANTES COMPRADOS!',
+    inv_title:'INVENTARIO',inv_shorts:'SHORTS',inv_gloves:'GUANTES',inv_stats:'ESTADÍSTICAS',inv_history:'HISTORIAL',
+    inv_no_shorts:'SIN SHORTS',inv_no_gloves:'SIN GUANTES',inv_no_fights:'SIN PELEAS AÚN',
+    inv_equipped_msg:'EQUIPADO!',
+    stat_wins:'VICTORIAS',stat_losses:'DERROTAS',stat_kos:"KO'S",stat_tc:'SALDO TC',
+    hist_win:'VICTORIA',hist_loss:'DERROTA',hist_vs:'vs',hist_ko:'KO',hist_dec:'DEC',
+    settings_title:'\u2699 AJUSTES',settings_lang_label:'\uD83C\uDF10 IDIOMA',
+    settings_current_lang:'IDIOMA ACTUAL',settings_version:'VERSIÓN',settings_build:'BUILD',settings_saved:'IDIOMA GUARDADO!',
+    online_title:'2J ONLINE',online_create_hint:'CREA UNA SALA Y COMPARTE\nEL CÓDIGO CON TU AMIGO',
+    online_create:'CREAR SALA',online_join_hint:'O ÚNETE CON UN CÓDIGO:',online_join:'UNIRSE',
+    online_code_hint:'COMPARTE ESTE CÓDIGO CON TU RIVAL',online_room_code:'CÓDIGO DE SALA',
+    online_waiting:'ESPERANDO RIVAL...',online_cancel:'CANCELAR',online_p1:'J1 - ROJO',online_p2:'J2 - AZUL',
+    online_err_sb:'SE REQUIERE SUPABASE',online_err_code:'INGRESA 6 CARACTERES',
+    hud_round:'RONDA',hud_cpu:'CPU HIERRO',hud_trainer:'ENTRENADOR',hud_bag:'SACO',hud_tutorial:'TUTORIAL',
+    go_next_round:'SIGUIENTE RONDA',go_fight_again:'PELEAR DE NUEVO',go_main_menu:'MENÚ PRINCIPAL',
+    go_ko:'K.O.!!!',go_wins:'GANA!',go_time_up:'TIEMPO!',go_final:'FINAL!',go_draw:'EMPATE!',
+    go_tc_earned:'TC GANADOS!',go_continue:'CONTINUAR',go_rematch:'REVANCHA?',
+    go_waiting:'ESPERANDO\nRIVAL...',go_timed_out:'REVANCHA\nEXPIRADA',
+    go_rage_quit:'RIVAL\nABANDONÓ!\n¡GANASTE!',
+    go_you_win:'GANASTE!',go_you_lose:'PERDISTE!',go_accept:'ACEPTAR!',
+    fx_miss:'FALLO!',fx_blocked:'BLOQUEADO!',fx_block_broken:'BLOQUEO ROTO!',fx_perfect:'BLOQUEO PERFECTO!',
+    fx_jab:'JAB!',fx_heavy:'GOLPAZO!!',fx_combo:'x COMBO!',fx_on_fire:'EN LLAMAS!!',
+    fx_ko_stam:'SIN ESTAM!',fx_cooling:'ENFRIANDO!',fx_too_far:'DEMASIADO LEJOS!',
+    tut_label:'TUTORIAL',
+    tut_welcome:"¡BIENVENIDO AL GIMNASIO!\nAPRENDAMOS LO BÁSICO.",
+    tut_jab_intro:'ACÉRCATE AL SACO\n¡Y DA 3 JABS!',
+    tut_jab_ready:'PRESIONA SIGUIENTE CUANDO ESTÉS LISTO',
+    tut_jab_hint:'JAB - M1 O [1]',
+    tut_heavy_intro:'¡BIEN HECHO!\nRETROCEDE Y\nDALE 2 GOLPES FUERTES!',
+    tut_heavy_hint:'GOLPE FUERTE - M2 O [2]',
+    tut_heavy_info:'EL GOLPE FUERTE HACE MÁS DAÑO\nPERO ES MÁS LENTO.',
+    tut_spar_intro:"¡A ENTRENAR!\nUN ENTRENADOR VA A ATACAR.\n¡BLOQUEA SUS GOLPES!",
+    tut_spar_start:'PRESIONA SIGUIENTE PARA EMPEZAR',
+    tut_block_hint:'BLOQUEAR - ESPACIO O [F]',
+    tut_finish:"¡ERES UN NATURAL!\n¡AHORA A PELEAR DE VERDAD!",
+    tut_finish_hint:'PRESIONA TERMINAR PARA RECLAMAR TU RECOMPENSA',
+    tut_reward:'+ 500 TC DE RECOMPENSA!',
+    tut_claim:'RECLAMAR 500 TC! \u2714',tut_finish_btn:'TERMINAR! \u2714',tut_next:'SIGUIENTE \u25BA',
+    tut_great:'¡GENIAL!',tut_powerful:'¡PODEROSO!',tut_well_blocked:'¡BIEN BLOQUEADO!',tut_perfect_hit:'¡PERFECTO!!',
+    tut_bag_destroyed:'¡SACO DESTRUIDO!',tut_bag_hp:'HP SACO',tut_walk:'ACÉRCATE AL SACO  A/D',
+    tut_jabs_count:'/3 JABS',tut_heavies_count:'/2 GOLPES',tut_blocks_count:'/3',
+    mob_jab:'JAB',mob_heavy:'GOLPE',mob_block:'BLOQUEO',mob_menu:'MENÚ',
+    lobby_you:'(TÚ)',lobby_waiting_dot:'ESPERANDO...',
+    cred_created_by:'CREADO POR',cred_role:'DISEÑADOR \u2022 DESARROLLADOR \u2022 ARTISTA',
+    cred_find:'\uD83D\uDD17 ENCUÉNTRAME ONLINE',cred_built:'HECHO CON',
+    cred_tech1:'HTML5 CANVAS Y VANILLA JS',cred_tech2:'SUPABASE (AUTH Y TIEMPO REAL)',
+    cred_tech3:'FUENTE PRESS START 2P (GOOGLE)',cred_tech4:'MUCHO AMOR Y NOCHES SIN DORMIR \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 TODOS LOS DERECHOS RESERVADOS',
+    cred_tiktok:'TIKTOK',cred_youtube:'YOUTUBE',cred_instagram:'INSTAGRAM',cred_back:'\u2190 ATRÁS',
+    upd_title:'\uD83D\uDCDD ACTUALIZACIONES',upd_subtitle:'RETRO BRAWL EDICIÓN CAMPEONATO',upd_latest:'ÚLTIMO',
+    back:'\u2190 ATRÁS',online_badge:'EN LÍNEA'
+  },
+  pt:{
+    name:'PORTUGUÊS',
+    login_btn:'ENTRAR NO RINGUE',signup_btn:'CRIAR LUTADOR',guest_btn:'JOGAR SEM CONTA',
+    login_tab:'ENTRAR',signup_tab:'CADASTRO',
+    email_ph:'EMAIL',pass_ph:'SENHA',newpass_ph:'SENHA (MÍN 6)',
+    name_ph:'NOME DO LUTADOR (MAX 10)',
+    err_email_pass:'INSIRA EMAIL E SENHA!',err_logging:'ENTRANDO...',
+    err_wrong:'EMAIL OU SENHA INCORRETOS!',err_confirm:'VERIFIQUE SEU EMAIL!',
+    err_no_name:'INSIRA UM NOME!',err_no_email:'INSIRA SEU EMAIL!',
+    err_pass_short:'SENHA MÍN 6 CHARS!',err_creating:'CRIANDO CONTA...',
+    err_check_email:'VERIFIQUE SEU EMAIL E CLIQUE NO LINK, DEPOIS ENTRE!',
+    menu_vs_cpu:'\u25B6 VS CPU',menu_online:'\uD83C\uDF10 2J ONLINE',menu_inventory:'\uD83C\uDF89 INVENTÁRIO',
+    menu_shop:'\uD83D\uDED2 LOJA',menu_name:'\u270E NOME',menu_logout:'\u2190 SAIR',
+    menu_settings:'\u2699 CONFIGURAÇÕES',menu_updates:'\uD83D\uDCDD ATUALIZAÇÕES',menu_tutorial:'\uD83C\uDF93 TUTORIAL - GANHAR 500 TC',
+    menu_credits:'\u2605 CRÉDITOS',menu_controls:'M1/1=JAB   M2/2=GOLPE   SPC/F=BLOQUEIO   A/D=MOVER',
+    name_title:'NOME DO LUTADOR',name_hint:'MAX 10 CARACTERES',name_save:'SALVAR NOME',
+    name_saved:'NOME SALVO!',name_empty:'INSIRA UM NOME!',
+    shop_title:'LOJA DE EQUIPAMENTOS',shop_shorts:'\u25B3 SHORTS',shop_gloves:'\u25B2 LUVAS',
+    shop_free:'GRÁTIS',shop_buy:'COMPRAR',shop_equipped:'EQUIPADO',shop_equip:'EQUIPAR',
+    shop_not_enough:'TC INSUFICIENTE!',shop_purchased:'COMPRADO!',shop_gloves_bought:'LUVAS COMPRADAS!',
+    inv_title:'INVENTÁRIO',inv_shorts:'SHORTS',inv_gloves:'LUVAS',inv_stats:'ESTATÍSTICAS',inv_history:'HISTÓRICO',
+    inv_no_shorts:'SEM SHORTS',inv_no_gloves:'SEM LUVAS',inv_no_fights:'SEM LUTAS AINDA',
+    inv_equipped_msg:'EQUIPADO!',
+    stat_wins:'VITÓRIAS',stat_losses:'DERROTAS',stat_kos:"KO'S",stat_tc:'SALDO TC',
+    hist_win:'VITÓRIA',hist_loss:'DERROTA',hist_vs:'vs',hist_ko:'KO',hist_dec:'DEC',
+    settings_title:'\u2699 CONFIGURAÇÕES',settings_lang_label:'\uD83C\uDF10 IDIOMA',
+    settings_current_lang:'IDIOMA ATUAL',settings_version:'VERSÃO DO JOGO',settings_build:'BUILD',settings_saved:'IDIOMA SALVO!',
+    online_title:'2J ONLINE',online_create_hint:'CRIE UMA SALA E COMPARTILHE\nO CÓDIGO COM SEU AMIGO',
+    online_create:'CRIAR SALA',online_join_hint:'OU ENTRE COM UM CÓDIGO:',online_join:'ENTRAR NA SALA',
+    online_code_hint:'COMPARTILHE ESTE CÓDIGO COM SEU OPONENTE',online_room_code:'CÓDIGO DA SALA',
+    online_waiting:'AGUARDANDO OPONENTE...',online_cancel:'CANCELAR',online_p1:'J1 - VERMELHO',online_p2:'J2 - AZUL',
+    online_err_sb:'SUPABASE NECESSÁRIO',online_err_code:'INSIRA 6 CARACTERES',
+    hud_round:'RODADA',hud_cpu:'CPU FERRO',hud_trainer:'TREINADOR',hud_bag:'SACO',hud_tutorial:'TUTORIAL',
+    go_next_round:'PRÓXIMA RODADA',go_fight_again:'LUTAR DE NOVO',go_main_menu:'MENU PRINCIPAL',
+    go_ko:'K.O.!!!',go_wins:'VENCE!',go_time_up:'TEMPO!',go_final:'FINAL!',go_draw:'EMPATE!',
+    go_tc_earned:'TC GANHOS!',go_continue:'CONTINUAR',go_rematch:'REVANCHE?',
+    go_waiting:'AGUARDANDO\nOPONENTE...',go_timed_out:'REVANCHE\nEXPIRADA',
+    go_rage_quit:'OPONENTE\nDESISTIU!\nVOCÊ VENCEU!',
+    go_you_win:'VOCÊ VENCEU!',go_you_lose:'VOCÊ PERDEU!',go_accept:'ACEITAR!',
+    fx_miss:'ERROU!',fx_blocked:'BLOQUEADO!',fx_block_broken:'BLOQUEIO QUEBRADO!',fx_perfect:'BLOQUEIO PERFEITO!',
+    fx_jab:'JAB!',fx_heavy:'PANCADA!!',fx_combo:'x COMBO!',fx_on_fire:'EM CHAMAS!!',
+    fx_ko_stam:'SEM ESTAM!',fx_cooling:'RESFRIANDO!',fx_too_far:'LONGE DEMAIS!',
+    tut_label:'TUTORIAL',
+    tut_welcome:"BEM-VINDO AO GINÁSIO!\nVAMOS APRENDER O BÁSICO.",
+    tut_jab_intro:'APROXIME-SE DO SACO\nE DÊ 3 JABS!',
+    tut_jab_ready:'PRESSIONE PRÓXIMO QUANDO ESTIVER PRONTO',
+    tut_jab_hint:'JAB - M1 OU [1]',
+    tut_heavy_intro:'BEM FEITO!\nRECUE E\nTENTE 2 GOLPES PESADOS!',
+    tut_heavy_hint:'GOLPE PESADO - M2 OU [2]',
+    tut_heavy_info:'O GOLPE PESADO CAUSA MAIS DANO\nMAS É MAIS LENTO.',
+    tut_spar_intro:"HORA DO SPARRING!\nUM TREINADOR VAI ATACAR.\nBLOQUEIE OS GOLPES!",
+    tut_spar_start:'PRESSIONE PRÓXIMO PARA COMEÇAR',
+    tut_block_hint:'BLOQUEIO - ESPAÇO OU [F]',
+    tut_finish:"VOCÊ É UM NATURAL!\nAGORA VÁ LUTAR DE VERDADE!",
+    tut_finish_hint:'PRESSIONE TERMINAR PARA RECEBER SUA RECOMPENSA',
+    tut_reward:'+ 500 TC DE RECOMPENSA!',
+    tut_claim:'RECEBER 500 TC! \u2714',tut_finish_btn:'TERMINAR! \u2714',tut_next:'PRÓXIMO \u25BA',
+    tut_great:'ÓTIMO!',tut_powerful:'PODEROSO!',tut_well_blocked:'BEM BLOQUEADO!',tut_perfect_hit:'PERFEITO!!',
+    tut_bag_destroyed:'SACO DESTRUÍDO!',tut_bag_hp:'HP SACO',tut_walk:'APROXIME-SE DO SACO  A/D',
+    tut_jabs_count:'/3 JABS',tut_heavies_count:'/2 GOLPES',tut_blocks_count:'/3',
+    mob_jab:'JAB',mob_heavy:'GOLPE',mob_block:'BLOQUEIO',mob_menu:'MENU',
+    lobby_you:'(VOCÊ)',lobby_waiting_dot:'AGUARDANDO...',
+    cred_created_by:'CRIADO POR',cred_role:'DESIGNER \u2022 DESENVOLVEDOR \u2022 ARTISTA',
+    cred_find:'\uD83D\uDD17 ME ENCONTRE ONLINE',cred_built:'FEITO COM',
+    cred_tech1:'HTML5 CANVAS E VANILLA JS',cred_tech2:'SUPABASE (AUTH E TEMPO REAL)',
+    cred_tech3:'FONTE PRESS START 2P (GOOGLE)',cred_tech4:'MUITO AMOR E MADRUGADAS \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 TODOS OS DIREITOS RESERVADOS',
+    cred_tiktok:'TIKTOK',cred_youtube:'YOUTUBE',cred_instagram:'INSTAGRAM',cred_back:'\u2190 VOLTAR',
+    upd_title:'\uD83D\uDCDD ATUALIZAÇÕES',upd_subtitle:'RETRO BRAWL EDIÇÃO CAMPEONATO',upd_latest:'MAIS RECENTE',
+    back:'\u2190 VOLTAR',online_badge:'ONLINE'
+  },
+  fr:{
+    name:'FRANÇAIS',
+    login_btn:'ENTRER SUR LE RING',signup_btn:'CRÉER UN COMBATTANT',guest_btn:'JOUER EN INVITÉ',
+    login_tab:'CONNEXION',signup_tab:'INSCRIPTION',
+    email_ph:'EMAIL',pass_ph:'MOT DE PASSE',newpass_ph:'MOT DE PASSE (MIN 6)',
+    name_ph:'NOM DU COMBATTANT (MAX 10)',
+    err_email_pass:'ENTREZ EMAIL ET MOT DE PASSE!',err_logging:'CONNEXION EN COURS...',
+    err_wrong:'EMAIL OU MOT DE PASSE INCORRECT!',err_confirm:'VÉRIFIEZ VOTRE EMAIL!',
+    err_no_name:'ENTREZ UN NOM!',err_no_email:'ENTREZ VOTRE EMAIL!',
+    err_pass_short:'MOT DE PASSE MIN 6 CHARS!',err_creating:'CRÉATION DU COMPTE...',
+    err_check_email:'VÉRIFIEZ VOTRE EMAIL ET CLIQUEZ SUR LE LIEN, PUIS CONNECTEZ-VOUS!',
+    menu_vs_cpu:'\u25B6 VS CPU',menu_online:'\uD83C\uDF10 2J EN LIGNE',menu_inventory:'\uD83C\uDF89 INVENTAIRE',
+    menu_shop:'\uD83D\uDED2 BOUTIQUE',menu_name:'\u270E NOM',menu_logout:'\u2190 DÉCONNEXION',
+    menu_settings:'\u2699 PARAMÈTRES',menu_updates:'\uD83D\uDCDD MISES À JOUR',menu_tutorial:'\uD83C\uDF93 TUTORIEL - GAGNER 500 TC',
+    menu_credits:'\u2605 CRÉDITS',menu_controls:'M1/1=JAB   M2/2=LOURD   SPC/F=PARADE   A/D=BOUGE',
+    name_title:'NOM DU COMBATTANT',name_hint:'MAX 10 CARACTÈRES',name_save:'SAUVEGARDER',
+    name_saved:'NOM SAUVEGARDÉ!',name_empty:'ENTREZ UN NOM!',
+    shop_title:"BOUTIQUE D'ÉQUIPEMENT",shop_shorts:'\u25B3 SHORTS',shop_gloves:'\u25B2 GANTS',
+    shop_free:'GRATUIT',shop_buy:'ACHETER',shop_equipped:'ÉQUIPÉ',shop_equip:'ÉQUIPER',
+    shop_not_enough:'TC INSUFFISANTS!',shop_purchased:'ACHETÉ!',shop_gloves_bought:'GANTS ACHETÉS!',
+    inv_title:'INVENTAIRE',inv_shorts:'SHORTS',inv_gloves:'GANTS',inv_stats:'STATISTIQUES',inv_history:'HISTORIQUE',
+    inv_no_shorts:'AUCUN SHORT',inv_no_gloves:'AUCUN GANT',inv_no_fights:'PAS DE COMBATS ENCORE',
+    inv_equipped_msg:'ÉQUIPÉ!',
+    stat_wins:'VICTOIRES',stat_losses:'DÉFAITES',stat_kos:"KO'S",stat_tc:'SOLDE TC',
+    hist_win:'VICTOIRE',hist_loss:'DÉFAITE',hist_vs:'vs',hist_ko:'KO',hist_dec:'DEC',
+    settings_title:'\u2699 PARAMÈTRES',settings_lang_label:'\uD83C\uDF10 LANGUE',
+    settings_current_lang:'LANGUE ACTUELLE',settings_version:'VERSION DU JEU',settings_build:'BUILD',settings_saved:'LANGUE SAUVEGARDÉE!',
+    online_title:'2J EN LIGNE',online_create_hint:'CRÉEZ UNE SALLE ET PARTAGEZ\nLE CODE AVEC VOTRE AMI',
+    online_create:'CRÉER SALLE',online_join_hint:'OU REJOIGNEZ AVEC UN CODE:',online_join:'REJOINDRE',
+    online_code_hint:'PARTAGEZ CE CODE AVEC VOTRE ADVERSAIRE',online_room_code:'CODE DE SALLE',
+    online_waiting:'EN ATTENTE D\'ADVERSAIRE...',online_cancel:'ANNULER',online_p1:'J1 - ROUGE',online_p2:'J2 - BLEU',
+    online_err_sb:'SUPABASE REQUIS',online_err_code:'ENTREZ 6 CARACTÈRES',
+    hud_round:'ROUND',hud_cpu:'CPU ACIER',hud_trainer:'ENTRAÎNEUR',hud_bag:'SAC',hud_tutorial:'TUTORIEL',
+    go_next_round:'ROUND SUIVANT',go_fight_again:'RECOMBATTRE',go_main_menu:'MENU PRINCIPAL',
+    go_ko:'K.O.!!!',go_wins:'GAGNE!',go_time_up:'TEMPS!',go_final:'FINAL!',go_draw:'ÉGALITÉ!',
+    go_tc_earned:'TC GAGNÉS!',go_continue:'CONTINUER',go_rematch:'REVANCHE?',
+    go_waiting:'ATTENTE\nD\'ADVERSAIRE...',go_timed_out:'REVANCHE\nEXPIRÉE',
+    go_rage_quit:'ADVERSAIRE\nABANDONNÉ!\nVOUS GAGNEZ!',
+    go_you_win:'VOUS GAGNEZ!',go_you_lose:'VOUS PERDEZ!',go_accept:'ACCEPTER!',
+    fx_miss:'RATÉ!',fx_blocked:'BLOQUÉ!',fx_block_broken:'GARDE BRISÉE!',fx_perfect:'PARADE PARFAITE!',
+    fx_jab:'JAB!',fx_heavy:'LOURD!!',fx_combo:'x COMBO!',fx_on_fire:'EN FEU!!',
+    fx_ko_stam:'SANS STAM!',fx_cooling:'REFROID!',fx_too_far:'TROP LOIN!',
+    tut_label:'TUTORIEL',
+    tut_welcome:"BIENVENUE AU GYMNASE!\nAPPRENONS LES BASES.",
+    tut_jab_intro:'APPROCHEZ-VOUS DU SAC\nET DONNEZ 3 JABS!',
+    tut_jab_ready:'APPUYEZ SUIVANT QUAND PRÊT',
+    tut_jab_hint:'JAB - M1 OU [1]',
+    tut_heavy_intro:'BIEN JOUÉ!\nRECULEZ ET\nESSAYEZ 2 COUPS LOURDS!',
+    tut_heavy_hint:'COUP LOURD - M2 OU [2]',
+    tut_heavy_info:'LE COUP LOURD FAIT PLUS DE DÉGÂTS\nMAIS EST PLUS LENT.',
+    tut_spar_intro:"SPARRING!\nUN ENTRAÎNEUR VA ATTAQUER.\nBLOQUEZ SES COUPS!",
+    tut_spar_start:'APPUYEZ SUIVANT POUR COMMENCER',
+    tut_block_hint:'BLOQUER - ESPACE OU [F]',
+    tut_finish:"VOUS ÊTES UN NATUREL!\nMASINTENANT ALLEZ COMBATTRE!",
+    tut_finish_hint:'APPUYEZ TERMINER POUR VOTRE RÉCOMPENSE',
+    tut_reward:'+ 500 TC DE RÉCOMPENSE!',
+    tut_claim:'RÉCLAMER 500 TC! \u2714',tut_finish_btn:'TERMINER! \u2714',tut_next:'SUIVANT \u25BA',
+    tut_great:'SUPER!',tut_powerful:'PUISSANT!',tut_well_blocked:'BIEN BLOQUÉ!',tut_perfect_hit:'PARFAIT!!',
+    tut_bag_destroyed:'SAC DÉTRUIT!',tut_bag_hp:'HP SAC',tut_walk:'APPROCHEZ DU SAC  A/D',
+    tut_jabs_count:'/3 JABS',tut_heavies_count:'/2 LOURDS',tut_blocks_count:'/3',
+    mob_jab:'JAB',mob_heavy:'LOURD',mob_block:'BLOQUER',mob_menu:'MENU',
+    lobby_you:'(VOUS)',lobby_waiting_dot:'ATTENTE...',
+    cred_created_by:'CRÉÉ PAR',cred_role:'DESIGNER \u2022 DÉVELOPPEUR \u2022 ARTISTE',
+    cred_find:'\uD83D\uDD17 RETROUVEZ-MOI EN LIGNE',cred_built:'CONSTRUIT AVEC',
+    cred_tech1:'HTML5 CANVAS ET VANILLA JS',cred_tech2:'SUPABASE (AUTH ET TEMPS RÉEL)',
+    cred_tech3:'POLICE PRESS START 2P (GOOGLE)',cred_tech4:'BEAUCOUP D\'AMOUR ET DE NUITS \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 TOUS DROITS RÉSERVÉS',
+    cred_tiktok:'TIKTOK',cred_youtube:'YOUTUBE',cred_instagram:'INSTAGRAM',cred_back:'\u2190 RETOUR',
+    upd_title:'\uD83D\uDCDD MISES À JOUR',upd_subtitle:'RETRO BRAWL ÉDITION CHAMPIONNAT',upd_latest:'DERNIER',
+    back:'\u2190 RETOUR',online_badge:'EN LIGNE'
+  },
+  ja:{
+    name:'日本語',
+    login_btn:'リングに入る',signup_btn:'ファイター作成',guest_btn:'ゲストでプレイ',
+    login_tab:'ログイン',signup_tab:'新規登録',
+    email_ph:'メール',pass_ph:'パスワード',newpass_ph:'パスワード（6文字以上）',
+    name_ph:'ファイター名（最大10文字）',
+    err_email_pass:'メールとパスワードを入力!',err_logging:'ログイン中...',
+    err_wrong:'メールまたはパスワードが違います!',err_confirm:'メールを確認してください!',
+    err_no_name:'名前を入力!',err_no_email:'メールを入力!',
+    err_pass_short:'パスワードは6文字以上!',err_creating:'アカウント作成中...',
+    err_check_email:'メールのリンクをクリックしてからログインしてください!',
+    menu_vs_cpu:'\u25B6 CPU対戦',menu_online:'\uD83C\uDF10 オンライン2P',menu_inventory:'\uD83C\uDF89 インベントリ',
+    menu_shop:'\uD83D\uDED2 ショップ',menu_name:'\u270E 名前',menu_logout:'\u2190 ログアウト',
+    menu_settings:'\u2699 設定',menu_updates:'\uD83D\uDCDD 更新履歴',menu_tutorial:'\uD83C\uDF93 チュートリアル - 500TC獲得',
+    menu_credits:'\u2605 クレジット',menu_controls:'M1/1=ジャブ   M2/2=ヘビー   SPC/F=ブロック   A/D=移動',
+    name_title:'ファイター名',name_hint:'最大10文字',name_save:'名前を保存',
+    name_saved:'名前を保存しました!',name_empty:'名前を入力してください!',
+    shop_title:'ギアショップ',shop_shorts:'\u25B3 ショーツ',shop_gloves:'\u25B2 グローブ',
+    shop_free:'無料',shop_buy:'購入',shop_equipped:'装備中',shop_equip:'装備する',
+    shop_not_enough:'TCが足りません!',shop_purchased:'購入しました!',shop_gloves_bought:'グローブを購入!',
+    inv_title:'インベントリ',inv_shorts:'ショーツ',inv_gloves:'グローブ',inv_stats:'統計',inv_history:'履歴',
+    inv_no_shorts:'ショーツなし',inv_no_gloves:'グローブなし',inv_no_fights:'試合なし',
+    inv_equipped_msg:'装備しました!',
+    stat_wins:'勝利',stat_losses:'敗北',stat_kos:'KO数',stat_tc:'TCバランス',
+    hist_win:'勝利',hist_loss:'敗北',hist_vs:'vs',hist_ko:'KO',hist_dec:'判定',
+    settings_title:'\u2699 設定',settings_lang_label:'\uD83C\uDF10 言語',
+    settings_current_lang:'現在の言語',settings_version:'ゲームバージョン',settings_build:'ビルド',settings_saved:'言語を保存しました!',
+    online_title:'オンライン2P',online_create_hint:'ルームを作って\nコードを友達に教えよう',
+    online_create:'ルーム作成',online_join_hint:'またはコードで参加:',online_join:'参加する',
+    online_code_hint:'このコードを対戦相手に教えよう',online_room_code:'ルームコード',
+    online_waiting:'対戦相手を待っています...',online_cancel:'キャンセル',online_p1:'P1 - 赤',online_p2:'P2 - 青',
+    online_err_sb:'Supabase必須',online_err_code:'6文字のコードを入力',
+    hud_round:'ラウンド',hud_cpu:'CPU鉄拳',hud_trainer:'トレーナー',hud_bag:'バッグ',hud_tutorial:'チュートリアル',
+    go_next_round:'次のラウンド',go_fight_again:'もう一度',go_main_menu:'メインメニュー',
+    go_ko:'K.O.!!!',go_wins:'の勝ち!',go_time_up:'時間切れ!',go_final:'決勝!',go_draw:'引き分け!',
+    go_tc_earned:'TC獲得!',go_continue:'続ける',go_rematch:'リマッチ?',
+    go_waiting:'対戦相手を\n待っています...',go_timed_out:'リマッチ\nタイムアウト',
+    go_rage_quit:'相手が\n逃げました!\nあなたの勝ち!',
+    go_you_win:'あなたの勝ち!',go_you_lose:'あなたの負け!',go_accept:'受け入れる!',
+    fx_miss:'ミス!',fx_blocked:'ブロック!',fx_block_broken:'ガード崩壊!',fx_perfect:'パーフェクトブロック!',
+    fx_jab:'ジャブ!',fx_heavy:'ヘビー!!',fx_combo:'xコンボ!',fx_on_fire:'絶好調!!',
+    fx_ko_stam:'スタミナ切れ!',fx_cooling:'クールダウン!',fx_too_far:'遠すぎる!',
+    tut_label:'チュートリアル',
+    tut_welcome:"ジムへようこそ!\n基本を学びましょう。",
+    tut_jab_intro:'バッグに近づいて\n3回ジャブを打とう!',
+    tut_jab_ready:'準備ができたら次へ',
+    tut_jab_hint:'ジャブ - M1 または [1]',
+    tut_heavy_intro:'よくできました!\n下がって\nヘビーを2回打とう!',
+    tut_heavy_hint:'ヘビー - M2 または [2]',
+    tut_heavy_info:'ヘビーはダメージが大きいが\n遅い。',
+    tut_spar_intro:"スパーリング!\nトレーナーが攻撃します。\nブロックしよう!",
+    tut_spar_start:'次へを押してスタート',
+    tut_block_hint:'ブロック - スペース または [F]',
+    tut_finish:"素晴らしい!\n本番で戦いに行こう!",
+    tut_finish_hint:'終了を押して報酬を受け取ろう',
+    tut_reward:'+ 500 TC 報酬!',
+    tut_claim:'500 TC 受け取る! \u2714',tut_finish_btn:'終了! \u2714',tut_next:'次へ \u25BA',
+    tut_great:'すごい!',tut_powerful:'強力!',tut_well_blocked:'上手くブロック!',tut_perfect_hit:'パーフェクト!!',
+    tut_bag_destroyed:'バッグ破壊!',tut_bag_hp:'バッグHP',tut_walk:'バッグに近づこう  A/D',
+    tut_jabs_count:'/3 ジャブ',tut_heavies_count:'/2 ヘビー',tut_blocks_count:'/3',
+    mob_jab:'ジャブ',mob_heavy:'ヘビー',mob_block:'ブロック',mob_menu:'メニュー',
+    lobby_you:'(あなた)',lobby_waiting_dot:'待機中...',
+    cred_created_by:'制作者',cred_role:'ゲームデザイナー \u2022 開発者 \u2022 アーティスト',
+    cred_find:'\uD83D\uDD17 オンラインで探す',cred_built:'使用技術',
+    cred_tech1:'HTML5 Canvas と Vanilla JS',cred_tech2:'Supabase（認証・リアルタイム）',
+    cred_tech3:'Press Start 2P フォント（Google）',cred_tech4:'愛と夜更かしで作りました \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 All Rights Reserved',
+    cred_tiktok:'TikTok',cred_youtube:'YouTube',cred_instagram:'Instagram',cred_back:'\u2190 戻る',
+    upd_title:'\uD83D\uDCDD 更新履歴',upd_subtitle:'RETRO BRAWL チャンピオンシップエディション',upd_latest:'最新',
+    back:'\u2190 戻る',online_badge:'オンライン'
+  },
+  de:{
+    name:'DEUTSCH',
+    login_btn:'IN DEN RING',signup_btn:'KÄMPFER ERSTELLEN',guest_btn:'ALS GAST SPIELEN',
+    login_tab:'ANMELDEN',signup_tab:'REGISTRIEREN',
+    email_ph:'E-MAIL',pass_ph:'PASSWORT',newpass_ph:'PASSWORT (MIN 6)',
+    name_ph:'KÄMPFERNAME (MAX 10)',
+    err_email_pass:'E-MAIL UND PASSWORT EINGEBEN!',err_logging:'ANMELDUNG...',
+    err_wrong:'FALSCHE E-MAIL ODER PASSWORT!',err_confirm:'E-MAIL BESTÄTIGEN!',
+    err_no_name:'NAME EINGEBEN!',err_no_email:'E-MAIL EINGEBEN!',
+    err_pass_short:'PASSWORT MIN 6 ZEICHEN!',err_creating:'KONTO ERSTELLEN...',
+    err_check_email:'E-MAIL PRÜFEN UND AUF DEN LINK KLICKEN, DANN ANMELDEN!',
+    menu_vs_cpu:'\u25B6 GEGEN CPU',menu_online:'\uD83C\uDF10 2P ONLINE',menu_inventory:'\uD83C\uDF89 INVENTAR',
+    menu_shop:'\uD83D\uDED2 SHOP',menu_name:'\u270E NAME',menu_logout:'\u2190 ABMELDEN',
+    menu_settings:'\u2699 EINSTELLUNGEN',menu_updates:'\uD83D\uDCDD ÄNDERUNGSPROTOKOLL',menu_tutorial:'\uD83C\uDF93 TUTORIAL - 500 TC VERDIENEN',
+    menu_credits:'\u2605 CREDITS',menu_controls:'M1/1=JAB   M2/2=STARK   SPC/F=BLOCK   A/D=BEWEGEN',
+    name_title:'KÄMPFERNAME',name_hint:'MAX 10 ZEICHEN',name_save:'NAME SPEICHERN',
+    name_saved:'NAME GESPEICHERT!',name_empty:'NAME EINGEBEN!',
+    shop_title:'AUSRÜSTUNGSSHOP',shop_shorts:'\u25B3 SHORTS',shop_gloves:'\u25B2 HANDSCHUHE',
+    shop_free:'KOSTENLOS',shop_buy:'KAUFEN',shop_equipped:'AUSGERÜSTET',shop_equip:'AUSRÜSTEN',
+    shop_not_enough:'NICHT GENUG TC!',shop_purchased:'GEKAUFT!',shop_gloves_bought:'HANDSCHUHE GEKAUFT!',
+    inv_title:'INVENTAR',inv_shorts:'SHORTS',inv_gloves:'HANDSCHUHE',inv_stats:'STATISTIKEN',inv_history:'VERLAUF',
+    inv_no_shorts:'KEINE SHORTS',inv_no_gloves:'KEINE HANDSCHUHE',inv_no_fights:'NOCH KEINE KÄMPFE',
+    inv_equipped_msg:'AUSGERÜSTET!',
+    stat_wins:'SIEGE',stat_losses:'NIEDERLAGEN',stat_kos:"KO'S",stat_tc:'TC-GUTHABEN',
+    hist_win:'SIEG',hist_loss:'NIEDERLAGE',hist_vs:'vs',hist_ko:'KO',hist_dec:'ENT',
+    settings_title:'\u2699 EINSTELLUNGEN',settings_lang_label:'\uD83C\uDF10 SPRACHE',
+    settings_current_lang:'AKTUELLE SPRACHE',settings_version:'SPIELVERSION',settings_build:'BUILD',settings_saved:'SPRACHE GESPEICHERT!',
+    online_title:'2P ONLINE',online_create_hint:'ERSTELLE EIN ZIMMER UND TEILE\nDEN CODE MIT DEINEM FREUND',
+    online_create:'ZIMMER ERSTELLEN',online_join_hint:'ODER MIT CODE BEITRETEN:',online_join:'BEITRETEN',
+    online_code_hint:'TEILE DIESEN CODE MIT DEINEM GEGNER',online_room_code:'ZIMMERCODE',
+    online_waiting:'WARTE AUF GEGNER...',online_cancel:'ABBRECHEN',online_p1:'S1 - ROT',online_p2:'S2 - BLAU',
+    online_err_sb:'SUPABASE ERFORDERLICH',online_err_code:'6-ZEICHEN-CODE EINGEBEN',
+    hud_round:'RUNDE',hud_cpu:'CPU EISEN',hud_trainer:'TRAINER',hud_bag:'SANDSACK',hud_tutorial:'TUTORIAL',
+    go_next_round:'NÄCHSTE RUNDE',go_fight_again:'NOCHMAL KÄMPFEN',go_main_menu:'HAUPTMENÜ',
+    go_ko:'K.O.!!!',go_wins:'GEWINNT!',go_time_up:'ZEIT!',go_final:'FINALE!',go_draw:'UNENTSCHIEDEN!',
+    go_tc_earned:'TC VERDIENT!',go_continue:'WEITER',go_rematch:'REVANCHE?',
+    go_waiting:'WARTE AUF\nGEGNER...',go_timed_out:'REVANCHE\nABGELAUFEN',
+    go_rage_quit:'GEGNER\nHAT AUFGEGEBEN!\nDU GEWINNST!',
+    go_you_win:'DU GEWINNST!',go_you_lose:'DU VERLIERST!',go_accept:'ANNEHMEN!',
+    fx_miss:'VERFEHLT!',fx_blocked:'GEBLOCKT!',fx_block_broken:'BLOCK GEBROCHEN!',fx_perfect:'PERFEKTER BLOCK!',
+    fx_jab:'JAB!',fx_heavy:'WUCHTIG!!',fx_combo:'x COMBO!',fx_on_fire:'IN FLAMMEN!!',
+    fx_ko_stam:'KEINE AUSD!',fx_cooling:'ABKÜHLUNG!',fx_too_far:'ZU WEIT!',
+    tut_label:'TUTORIAL',
+    tut_welcome:"WILLKOMMEN IM GYM!\nLERNEN WIR DIE GRUNDLAGEN.",
+    tut_jab_intro:'GEH ZUM SANDSACK\nUND SCHLAGE 3 JABS!',
+    tut_jab_ready:'DRÜCKE WEITER WENN BEREIT',
+    tut_jab_hint:'JAB - M1 ODER [1]',
+    tut_heavy_intro:'GUT GEMACHT!\nTRITT ZURÜCK UND\nVERSUCHE 2 STARKE SCHLÄGE!',
+    tut_heavy_hint:'STARKER SCHLAG - M2 ODER [2]',
+    tut_heavy_info:'STARKER SCHLAG MACHT MEHR SCHADEN\nIST ABER LANGSAMER.',
+    tut_spar_intro:"SPARRING!\nEIN TRAINER WIRD ANGREIFEN.\nBLOCKE SEINE SCHLÄGE!",
+    tut_spar_start:'WEITER DRÜCKEN ZUM STARTEN',
+    tut_block_hint:'BLOCKEN - LEERTASTE ODER [F]',
+    tut_finish:"DU BIST EIN NATÜRLICHES TALENT!\nJETZT GEH KÄMPFEN!",
+    tut_finish_hint:'BEENDEN DRÜCKEN FÜR BELOHNUNG',
+    tut_reward:'+ 500 TC BELOHNUNG!',
+    tut_claim:'500 TC BEANSPRUCHEN! \u2714',tut_finish_btn:'BEENDEN! \u2714',tut_next:'WEITER \u25BA',
+    tut_great:'TOLL!',tut_powerful:'KRAFTVOLL!',tut_well_blocked:'GUT GEBLOCKT!',tut_perfect_hit:'PERFEKT!!',
+    tut_bag_destroyed:'SANDSACK ZERSTÖRT!',tut_bag_hp:'SANDSACK HP',tut_walk:'GEH ZUM SANDSACK  A/D',
+    tut_jabs_count:'/3 JABS',tut_heavies_count:'/2 STARK',tut_blocks_count:'/3',
+    mob_jab:'JAB',mob_heavy:'STARK',mob_block:'BLOCK',mob_menu:'MENÜ',
+    lobby_you:'(DU)',lobby_waiting_dot:'WARTEN...',
+    cred_created_by:'ERSTELLT VON',cred_role:'SPIELDESIGNER \u2022 ENTWICKLER \u2022 KÜNSTLER',
+    cred_find:'\uD83D\uDD17 FINDE MICH ONLINE',cred_built:'GEBAUT MIT',
+    cred_tech1:'HTML5 Canvas und Vanilla JS',cred_tech2:'Supabase (Auth & Echtzeit)',
+    cred_tech3:'Press Start 2P Schrift (Google)',cred_tech4:'Viel Liebe und späte Nächte \u2665',
+    cred_copy:'RETRO BRAWL \u00A9 2026 DEREK \u2022 ALLE RECHTE VORBEHALTEN',
+    cred_tiktok:'TIKTOK',cred_youtube:'YOUTUBE',cred_instagram:'INSTAGRAM',cred_back:'\u2190 ZURÜCK',
+    upd_title:'\uD83D\uDCDD ÄNDERUNGSPROTOKOLL',upd_subtitle:'RETRO BRAWL MEISTERSCHAFTS-EDITION',upd_latest:'NEUESTE',
+    back:'\u2190 ZURÜCK',online_badge:'ONLINE'
+  }
+};
+/* T() - translate any key, falls back to English */
+function T(key){
+  var L=LANGUAGES[currentLang]||LANGUAGES['en'];
+  return L[key]!==undefined?L[key]:(LANGUAGES['en'][key]||key);
+}
+
+function applyLang(){
+  var L=LANGUAGES[currentLang]||LANGUAGES['en'];
+  /* Static data-lang elements */
+  document.querySelectorAll('[data-lang]').forEach(function(el){
+    var key=el.getAttribute('data-lang');
+    if(L[key]!==undefined)el.textContent=L[key];
+  });
+  /* Placeholders */
+  var loginEmail=document.getElementById('loginEmail');
+  if(loginEmail)loginEmail.placeholder=T('email_ph');
+  var loginPass=document.getElementById('loginPass');
+  if(loginPass)loginPass.placeholder=T('pass_ph');
+  var signupEmail=document.getElementById('signupEmail');
+  if(signupEmail)signupEmail.placeholder=T('email_ph');
+  var signupPass=document.getElementById('signupPass');
+  if(signupPass)signupPass.placeholder=T('newpass_ph');
+  var signupName=document.getElementById('signupName');
+  if(signupName)signupName.placeholder=T('name_ph');
+  var nameInput=document.getElementById('nameInput');
+  if(nameInput)nameInput.placeholder=T('name_ph').slice(0,10);
+  /* Auth tabs */
+  var tl=document.getElementById('tabLogin');if(tl)tl.textContent=T('login_tab');
+  var ts=document.getElementById('tabSignup');if(ts)ts.textContent=T('signup_tab');
+  /* Mobile buttons */
+  var bjab=document.getElementById('bjab');
+  if(bjab)bjab.innerHTML=T('mob_jab')+'<br><span style="font-size:4px;color:#888;">M1</span>';
+  var bheavy=document.getElementById('bheavy');
+  if(bheavy)bheavy.innerHTML=T('mob_heavy')+'<br><span style="font-size:4px;color:#888;">M2</span>';
+  var bblock=document.getElementById('bblock');
+  if(bblock)bblock.innerHTML=T('mob_block')+'<br><span style="font-size:4px;color:#888;">SPC</span>';
+  /* Online lobby static text */
+  var lstat=document.getElementById('lobbyStatus');
+  if(lstat)lstat.textContent=T('online_waiting');
+  /* Credits dynamic text */
+  var credBy=document.getElementById('cred_created_by');if(credBy)credBy.textContent=T('cred_created_by');
+  var credRole=document.getElementById('cred_role');if(credRole)credRole.textContent=T('cred_role');
+  var credFind=document.getElementById('cred_find');if(credFind)credFind.textContent=T('cred_find');
+  var credBuilt=document.getElementById('cred_built_label');if(credBuilt)credBuilt.textContent=T('cred_built');
+  var credCopy=document.getElementById('cred_copy');if(credCopy)credCopy.textContent=T('cred_copy');
+  var tiktokEl=document.getElementById('cred_tiktok_lbl');if(tiktokEl)tiktokEl.textContent=T('cred_tiktok');
+  var ytEl=document.getElementById('cred_youtube_lbl');if(ytEl)ytEl.textContent=T('cred_youtube');
+  var igEl=document.getElementById('cred_instagram_lbl');if(igEl)igEl.textContent=T('cred_instagram');
+  /* Update log */
+  var updTitle=document.getElementById('upd_title_el');if(updTitle)updTitle.textContent=T('upd_title');
+  var updSub=document.getElementById('upd_sub_el');if(updSub)updSub.textContent=T('upd_subtitle');
+  var updLatest=document.getElementById('upd_latest_el');if(updLatest)updLatest.textContent=T('upd_latest');
+  /* Controls hint */
+  var ctrlEl=document.getElementById('controls_hint');if(ctrlEl)ctrlEl.textContent=T('menu_controls');
+  /* Online lobby colors */
+  var lp1=document.getElementById('lobby_p1_color');if(lp1)lp1.textContent=T('online_p1');
+  var lp2=document.getElementById('lobby_p2_color');if(lp2)lp2.textContent=T('online_p2');
+  /* Online badge */
+  var obadge=document.getElementById('online_badge_txt');if(obadge)obadge.textContent=T('online_badge');
+  /* Tutorial label */
+  var tutlbl=document.getElementById('tut_label_el');if(tutlbl)tutlbl.textContent=T('tut_label');
+  /* Save to storage */
+  try{localStorage.setItem('rb_lang',currentLang);}catch(e){}
+}
+
+function setLanguage(code){
+  currentLang=code;
+  applyLang();
+  renderSettings();
+  var msg=document.getElementById('settingsMsg');
+  if(msg){msg.textContent='\u2713 '+T('settings_saved');
+    setTimeout(function(){msg.textContent='';},2000);}
+}
+
+function renderSettings(){
+  var L=LANGUAGES[currentLang]||LANGUAGES['en'];
+  var disp=document.getElementById('currentLangDisplay');
+  if(disp)disp.textContent=L.name;
+  document.querySelectorAll('[data-langcode]').forEach(function(btn){
+    btn.className='lang-btn'+(btn.getAttribute('data-langcode')===currentLang?' active':'');
+  });
+}
+
 /* ── CONSTANTS ── */
 var JAB_CD=12, HEAVY_CD=300, BLOCK_CD=15;
 
@@ -470,14 +1237,14 @@ async function doLogin(){
   var email=document.getElementById('loginEmail').value.trim();
   var pass=document.getElementById('loginPass').value;
   var err=document.getElementById('loginErr');
-  if(!email||!pass){err.textContent='ENTER EMAIL AND PASSWORD!';return;}
-  err.textContent='LOGGING IN...';
+  if(!email||!pass){err.textContent=T('err_email_pass');return;}
+  err.textContent=T('err_logging');
   try{
     var res=await sb.auth.signInWithPassword({email:email,password:pass});
     if(res.error){
       var msg=res.error.message.toUpperCase();
-      if(msg.includes('INVALID')||msg.includes('CREDENTIALS'))msg='WRONG EMAIL OR PASSWORD!';
-      if(msg.includes('NOT CONFIRMED'))msg='CHECK YOUR EMAIL TO CONFIRM!';
+      if(msg.includes('INVALID')||msg.includes('CREDENTIALS'))msg=T('err_wrong');
+      if(msg.includes('NOT CONFIRMED'))msg=T('err_confirm');
       err.textContent=msg;return;
     }
     var uid=res.data.user.id;
@@ -501,10 +1268,10 @@ async function doSignup(){
   var email=document.getElementById('signupEmail').value.trim();
   var pass=document.getElementById('signupPass').value;
   var err=document.getElementById('signupErr');
-  if(!name){err.textContent='ENTER A FIGHTER NAME!';return;}
-  if(!email){err.textContent='ENTER YOUR EMAIL!';return;}
-  if(pass.length<6){err.textContent='PASSWORD MIN 6 CHARS!';return;}
-  err.textContent='CREATING ACCOUNT...';
+  if(!name){err.textContent=T('err_no_name');return;}
+  if(!email){err.textContent=T('err_no_email');return;}
+  if(pass.length<6){err.textContent=T('err_pass_short');return;}
+  err.textContent=T('err_creating');
   try{
     var res=await sb.auth.signUp({email:email,password:pass});
     if(res.error){err.textContent=res.error.message.toUpperCase();return;}
@@ -512,7 +1279,7 @@ async function doSignup(){
     var needsConfirm=!res.data.user||(res.data.user.identities&&res.data.user.identities.length===0);
     if(needsConfirm){
       err.className='msg-line msg-ok';
-      err.textContent='CHECK YOUR EMAIL AND CLICK THE LINK, THEN LOG IN!';
+      err.textContent=T('err_check_email');
       return;
     }
     var uid=res.data.user.id;
@@ -537,7 +1304,6 @@ async function doLogout(){
 }
 
 function doGuest(){
-  /* Try to load local save for guests */
   var had=loadLocal();
   if(!had){player.isGuest=true;player.name='GUEST';player.tc=0;player.tutorialDone=player.tutorialDone||false;}
   player.isGuest=true;
@@ -566,9 +1332,9 @@ function updateMenuUI(){
 function saveName(){
   var val=document.getElementById('nameInput').value.trim().toUpperCase().slice(0,10);
   var msg=document.getElementById('nameMsg');
-  if(!val){msg.className='msg-line msg-err';msg.textContent='ENTER A NAME!';return;}
+  if(!val){msg.className='msg-line msg-err';msg.textContent=T('name_empty');return;}
   player.name=val;saveProfile();updateMenuUI();
-  msg.className='msg-line msg-ok';msg.textContent='NAME SAVED!';
+  msg.className='msg-line msg-ok';msg.textContent=T('name_saved');
   setTimeout(function(){msg.textContent='';},2000);
 }
 
@@ -576,7 +1342,6 @@ function saveName(){
 function renderShop(){
   document.getElementById('shopTC').textContent='\u25C6 '+player.tc+' TC';
   document.getElementById('shopMsg').textContent='';
-  // Shorts
   var grid=document.getElementById('shopGrid');
   grid.innerHTML='';
   SHORTS_CATALOG.forEach(function(s){
@@ -595,9 +1360,9 @@ function renderShop(){
     pr.textContent=s.price===0?'FREE':s.price+' TC';
     var btn=document.createElement('button');
     btn.style.cssText="font-family:'Press Start 2P',monospace;font-size:5px;padding:5px 3px;width:100%;cursor:pointer;border:none;margin-top:2px;";
-    if(equipped){btn.textContent='EQUIPPED';btn.style.background='#00cc55';btn.style.color='#000';}
+    if(equipped){btn.textContent=T('shop_equipped');btn.style.background='#00cc55';btn.style.color='#000';}
     else if(owned){
-      btn.textContent='EQUIP';btn.style.background='var(--gold)';btn.style.color='#000';
+      btn.textContent=T('shop_equip');btn.style.background='var(--gold)';btn.style.color='#000';
       btn.onclick=function(){player.equippedShorts=s.id;saveProfile();renderShop();updateMenuUI();};
     }else{
       btn.textContent='BUY '+s.price+' TC';
@@ -605,16 +1370,15 @@ function renderShop(){
       btn.style.color=player.tc>=s.price?'#000':'#666';
       btn.onclick=function(){
         var m=document.getElementById('shopMsg');
-        if(player.tc<s.price){m.className='msg-line msg-err';m.textContent='NOT ENOUGH TC!';return;}
+        if(player.tc<s.price){m.className='msg-line msg-err';m.textContent=T('shop_not_enough');return;}
         player.tc-=s.price;player.ownedShorts.push(s.id);player.equippedShorts=s.id;
         saveProfile();renderShop();updateMenuUI();
-        m.className='msg-line msg-ok';m.textContent='PURCHASED!';
+        m.className='msg-line msg-ok';m.textContent=T('shop_purchased');
       };
     }
     card.appendChild(sw);card.appendChild(nm);card.appendChild(pr);card.appendChild(btn);
     grid.appendChild(card);
   });
-  // Gloves
   renderGloveShop();
 }
 
@@ -627,7 +1391,6 @@ function renderGloveShop(){
     var card=document.createElement('div');
     card.className='glove-card'+(equipped?' equipped':owned?' owned':'');
     card.style.position='relative';
-    // Draw glove swatch
     var sw=document.createElement('canvas');sw.width=36;sw.height=28;sw.style.imageRendering='pixelated';
     var sc=sw.getContext('2d');
     drawGloveToCanvas(sc,18,14,g.col,g.shd);
@@ -636,9 +1399,9 @@ function renderGloveShop(){
     pr.textContent=g.price===0?'FREE':g.price+' TC';
     var btn=document.createElement('button');
     btn.style.cssText="font-family:'Press Start 2P',monospace;font-size:5px;padding:5px 3px;width:100%;cursor:pointer;border:none;margin-top:2px;";
-    if(equipped){btn.textContent='ON';btn.style.background='#00cc55';btn.style.color='#000';}
+    if(equipped){btn.textContent=T('shop_equipped');btn.style.background='#00cc55';btn.style.color='#000';}
     else if(owned){
-      btn.textContent='EQUIP';btn.style.background='var(--gold)';btn.style.color='#000';
+      btn.textContent=T('shop_equip');btn.style.background='var(--gold)';btn.style.color='#000';
       btn.onclick=function(){player.equippedGloves=g.id;saveProfile();renderShop();updateMenuUI();};
     }else{
       btn.textContent=g.price+' TC';
@@ -646,12 +1409,12 @@ function renderGloveShop(){
       btn.style.color=player.tc>=g.price?'#000':'#666';
       btn.onclick=function(){
         var m=document.getElementById('shopMsg');
-        if(player.tc<g.price){m.className='msg-line msg-err';m.textContent='NOT ENOUGH TC!';return;}
+        if(player.tc<g.price){m.className='msg-line msg-err';m.textContent=T('shop_not_enough');return;}
         player.tc-=g.price;
         if(!player.ownedGloves)player.ownedGloves=['classic'];
         player.ownedGloves.push(g.id);player.equippedGloves=g.id;
         saveProfile();renderShop();updateMenuUI();
-        m.className='msg-line msg-ok';m.textContent='GLOVES BOUGHT!';
+        m.className='msg-line msg-ok';m.textContent=T('shop_gloves_bought');
       };
     }
     card.appendChild(sw);card.appendChild(nm);card.appendChild(pr);card.appendChild(btn);
@@ -685,7 +1448,7 @@ function renderInventory(){
   var grid=document.getElementById('invGrid');
   grid.innerHTML='';
   var owned=SHORTS_CATALOG.filter(function(s){return player.ownedShorts.indexOf(s.id)>=0;});
-  if(!owned.length){grid.innerHTML='<div class="inv-empty">NO SHORTS OWNED</div>';return;}
+  if(!owned.length){grid.innerHTML='<div class="inv-empty">'+T('inv_no_shorts')+'</div>';return;}
   owned.forEach(function(s){
     var equipped=player.equippedShorts===s.id;
     var card=document.createElement('div');
@@ -693,7 +1456,7 @@ function renderInventory(){
     card.onclick=function(){
       player.equippedShorts=s.id;saveProfile();renderInventory();updateMenuUI();
       var im=document.getElementById('invMsg');
-      im.className='msg-line msg-ok';im.textContent=s.name+' EQUIPPED!';
+      im.className='msg-line msg-ok';im.textContent=s.name+' '+T('inv_equipped_msg');
       setTimeout(function(){im.textContent='';},2000);
     };
     var sw=document.createElement('canvas');sw.width=44;sw.height=32;
@@ -712,7 +1475,7 @@ function renderInvGloves(){
   grid.innerHTML='';
   var og=player.ownedGloves||['classic'];
   var owned=GLOVE_CATALOG.filter(function(g){return og.indexOf(g.id)>=0;});
-  if(!owned.length){grid.innerHTML='<div class="inv-empty">NO GLOVES OWNED</div>';return;}
+  if(!owned.length){grid.innerHTML='<div class="inv-empty">'+T('inv_no_gloves')+'</div>';return;}
   owned.forEach(function(g){
     var equipped=(player.equippedGloves||'classic')===g.id;
     var card=document.createElement('div');
@@ -721,7 +1484,7 @@ function renderInvGloves(){
     card.onclick=function(){
       player.equippedGloves=g.id;saveProfile();renderInvGloves();updateMenuUI();
       var im=document.getElementById('invMsg');
-      im.className='msg-line msg-ok';im.textContent=g.name+' EQUIPPED!';
+      im.className='msg-line msg-ok';im.textContent=g.name+' '+T('inv_equipped_msg');
       setTimeout(function(){im.textContent='';},2000);
     };
     var sw=document.createElement('canvas');sw.width=36;sw.height=28;sw.style.imageRendering='pixelated';
@@ -734,8 +1497,8 @@ function renderInvGloves(){
 
 function renderStats(){
   var sg=document.getElementById('statsGrid');sg.innerHTML='';
-  [{val:player.stats.wins,lbl:'WINS'},{val:player.stats.losses,lbl:'LOSSES'},
-   {val:player.stats.kos,lbl:"KO'S"},{val:player.tc,lbl:'TC BALANCE'}
+  [{val:player.stats.wins,lbl:T('stat_wins')},{val:player.stats.losses,lbl:T('stat_losses')},
+   {val:player.stats.kos,lbl:T('stat_kos')},{val:player.tc,lbl:T('stat_tc')}
   ].forEach(function(s){
     var b=document.createElement('div');b.className='stat-box';
     b.innerHTML='<span class="stat-val">'+s.val+'</span><span class="stat-lbl">'+s.lbl+'</span>';
@@ -746,17 +1509,17 @@ function renderStats(){
 function buildHistory(){
   var hl=document.getElementById('historyList');
   hl.innerHTML='';
-  if(!player.history.length){hl.innerHTML='<div style="color:#555;font-size:7px;text-align:center;">NO FIGHTS YET</div>';return;}
+  if(!player.history.length){hl.innerHTML='<div style="color:#555;font-size:7px;text-align:center;">'+T('inv_no_fights')+'</div>';return;}
   player.history.slice(0,30).forEach(function(h){
     var won=h.result==='win';
     var row=document.createElement('div');
     row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a0033;';
     var res=document.createElement('span');
     res.style.cssText='font-size:7px;color:'+(won?'#66cc44':'#ff4444')+';';
-    res.textContent=(won?'WIN':'LOSS')+' vs '+h.opponent;
+    res.textContent=(won?T('hist_win'):T('hist_loss'))+' '+T('hist_vs')+' '+h.opponent;
     var info=document.createElement('span');
     info.style.cssText='font-size:5px;color:#555;text-align:right;';
-    info.textContent=(h.ko?'KO':'DEC')+' | R'+h.rounds+' | +'+h.tc+'TC';
+    info.textContent=(h.ko?T('hist_ko'):T('hist_dec'))+' | R'+h.rounds+' | +'+h.tc+'TC';
     row.appendChild(res);row.appendChild(info);hl.appendChild(row);
   });
 }
@@ -783,13 +1546,13 @@ function showOnlineLobby(){
 }
 
 async function createRoom(){
-  if(!sb){document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED';return;}
+  if(!sb){document.getElementById('lobbyErr').textContent=T('online_err_sb');return;}
   myRoomCode=genCode();isHost=true;
   document.getElementById('roomCodeDisplay').textContent=myRoomCode;
   document.getElementById('lobbyP1Name').textContent=player.name+' (YOU)';
-  document.getElementById('lobbyP2Name').textContent='WAITING...';
+  document.getElementById('lobbyP2Name').textContent=T('lobby_waiting_dot');
   document.getElementById('lobbyP2Dot').className='lobby-dot waiting';
-  document.getElementById('lobbyStatus').textContent='WAITING FOR OPPONENT...';
+  document.getElementById('lobbyStatus').textContent=T('online_waiting');
   document.getElementById('lobbyModeSelect').style.display='none';
   document.getElementById('lobbyWaiting').style.display='flex';
   subscribeToRoom(myRoomCode);
@@ -798,7 +1561,7 @@ async function createRoom(){
 async function joinRoom(){
   if(!sb){document.getElementById('lobbyErr').textContent='SUPABASE REQUIRED';return;}
   var code=document.getElementById('joinCodeInput').value.trim().toUpperCase();
-  if(code.length!==6){document.getElementById('lobbyErr').textContent='ENTER 6-CHARACTER CODE';return;}
+  if(code.length!==6){document.getElementById('lobbyErr').textContent=T('online_err_code');return;}
   myRoomCode=code;isHost=false;
   document.getElementById('roomCodeDisplay').textContent=myRoomCode;
   document.getElementById('lobbyP1Name').textContent='HOST';
@@ -858,7 +1621,7 @@ function subscribeToRoom(code){
     player.history.unshift({result:'win',opponent:opponentName,rounds:round,ko:false,tc:earned});
     saveProfile();
     document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
-    showGameOverlay('OPPONENT\nRAGE QUIT!\nYOU WIN!\n+'+earned+' TC','MAIN MENU',null);
+    showGameOverlay(T('go_rage_quit')+'\n+'+earned+' TC',T('go_main_menu'),null);
   });
   realtimeChannel.subscribe(function(status){
     if(status==='SUBSCRIBED'&&!isHost){
@@ -987,19 +1750,19 @@ function onlineGameOver(iWon,ko){
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
   if(iWon)showCelebration();
   rematchWanted=false;
-  showGameOverlay((iWon?'YOU WIN!':'YOU LOSE!')+'\n+'+earned+' TC','REMATCH?',function(){sendRematchRequest();});
+  showGameOverlay((iWon?T('go_you_win'):T('go_you_lose'))+'\n+'+earned+' TC',T('go_rematch'),function(){sendRematchRequest();});
 }
 
 function sendRematchRequest(){
   if(!realtimeChannel)return;
   rematchWanted=true;
-  document.getElementById('goTitle').textContent='WAITING FOR\nOPPONENT...';
+  document.getElementById('goTitle').textContent=T('go_waiting');
   var btn=document.getElementById('goMainBtn');btn.style.display='none';
   document.getElementById('gameOverlay').classList.add('show');
   realtimeChannel.send({type:'broadcast',event:'rematch',payload:{name:player.name}});
   if(rematchTimeout)clearTimeout(rematchTimeout);
   rematchTimeout=setTimeout(function(){
-    if(rematchWanted){rematchWanted=false;document.getElementById('goTitle').textContent='REMATCH\nTIMED OUT';setOverlayBtn('MAIN MENU',goToMenu);}
+    if(rematchWanted){rematchWanted=false;document.getElementById('goTitle').textContent=T('go_timed_out');setOverlayBtn(T('go_main_menu'),goToMenu);}
   },15000);
 }
 
@@ -1123,10 +1886,9 @@ function doAtk(atk,def,type){
   if(!atk||!def)return;
   if(atk.stunned>0||atk.state==='ko'||atk.state==='hurt')return;
   if(type==='jab'&&atk.jabCD>0)return;
-  if(type==='heavy'&&atk.heavyCD>0){addFX('COOLING!',atk.x,-60,'#888');return;}
-  if(atk.stamina<8){addFX('NO STAM!',atk.x,-60,'#666');return;}
+  if(type==='heavy'&&atk.heavyCD>0){addFX(T('fx_cooling'),atk.x,-60,'#888');return;}
+  if(atk.stamina<8){addFX(T('fx_ko_stam'),atk.x,-60,'#666');return;}
 
-  /* Punching while blocking: drop guard for punch duration, then auto-restore */
   if(atk.blocking){
     atk.blocking=false;
     atk.blockAnim=0;
@@ -1153,36 +1915,32 @@ function doAtk(atk,def,type){
       var blockBroken=(type==='heavy'&&def.stamina<25);
       if(blockBroken){
         def.blocking=false;def.blockCD=180;def.stunned=180;def.state='hurt';def.stateTimer=180;
-        addFX('BLOCK BROKEN!',def.x,-85,'#ff4400');burst(def.x,GROUND-80,'#ff4400',22);
+        addFX(T('fx_block_broken'),def.x,-85,'#ff4400');burst(def.x,GROUND-80,'#ff4400',22);
         doFlash('rgba(255,60,0,0.7)');doShakeEffect(16);
         def.hp=Math.max(0,def.hp-Math.floor(dmg*0.5));
       }else{
-        /* Perfect block: guard raised 50-400ms before impact (parry timing window) */
         var timeSinceRaise=def.blockRaisedAt>0?(Date.now()-def.blockRaisedAt):9999;
         var perfectBlock=(timeSinceRaise>=50&&timeSinceRaise<=400);
-        /* Tutorial: track block/perfect block on p1 (def===p1 means trainer hit player) */
         if(tutMode&&def===p1){tutTrackAtk(type,true,perfectBlock);}
         if(perfectBlock&&!tutMode){
           atk.stunned=180;atk.state='hurt';atk.stateTimer=180;
-          addFX('PERFECT BLOCK!',def.x,-85,'#00ddff');
+          addFX(T('fx_perfect'),def.x,-85,'#00ddff');
           burst(def.x,GROUND-80,'#00ddff',14);
           doFlash('rgba(0,160,255,0.3)');doShakeEffect(8);
         }
         dmg=Math.floor(dmg*0.08);def.stamina=Math.max(0,def.stamina-22);
-        burst(def.x,GROUND-80,'#88aaff',5);addFX((!tutMode&&perfectBlock)?'':'BLOCKED!',def.x,-50,'#88aaff');
+        burst(def.x,GROUND-80,'#88aaff',5);addFX((!tutMode&&perfectBlock)?'':T('fx_blocked'),def.x,-50,'#88aaff');
       }
     }else{
       burst(def.x,GROUND-88,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?18:9);
       burst(def.x,GROUND-88,'#fff',3);
-      /* Blood splatter on hit */
       bloodBurst(def.x,GROUND-88,type==='heavy'?8:3);
-      /* Sweat flies on impact */
       sweatBurst(def.x,GROUND-78,type==='heavy'?6:3);
       doFlash(type==='heavy'?'rgba(255,60,0,0.32)':'rgba(255,220,0,0.18)');
       doShakeEffect(type==='heavy'?9:4);
-      var lbl=type==='heavy'?'HEAVY!!':'JAB!';
-      if(atk.comboCount>=2)lbl=atk.comboCount+'x COMBO!';
-      if(atk.comboCount>=5)lbl='ON FIRE!! '+atk.comboCount+'x';
+      var lbl=type==='heavy'?T('fx_heavy'):T('fx_jab');
+      if(atk.comboCount>=2)lbl=atk.comboCount+T('fx_combo');
+      if(atk.comboCount>=5)lbl=T('fx_on_fire')+' '+atk.comboCount+'x';
       addFX(lbl,def.x,-75-Math.random()*18,type==='heavy'?'#ff4400':'#ffdd00');
       def.hp=Math.max(0,def.hp-dmg);
       def.hurtFlash=12;def.stunned=type==='heavy'?38:12;
@@ -1191,7 +1949,7 @@ function doAtk(atk,def,type){
     }
     updateBars();
   }else{
-    addFX('MISS!',atk.x+(atk.isCPU||atk.isOnlineP2?-50:50),-48,'#444');
+    addFX(T('fx_miss'),atk.x+(atk.isCPU||atk.isOnlineP2?-50:50),-48,'#444');
   }
 }
 
@@ -1218,14 +1976,13 @@ function doKO(loser,winner){
   if(localWon){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
   else{player.stats.losses++;player.history.unshift({result:'loss',opponent:'CPU IRON',rounds:round,ko:true,tc:earned});}
   saveProfile();
-  /* Start winner celebration */
   winner.celebAnim=120;
   var wname=localWon?player.name:'CPU IRON';
-  var tcMsg=localWon?('\n+'+earned+' TC EARNED!'):'';
+  var tcMsg=localWon?('\n+'+earned+' '+T('go_tc_earned')):'';
   if(localWon)showCelebration();
   setTimeout(function(){
     if(round<maxRounds){
-      showGameOverlay('K.O.!!!\n'+wname+' WINS!'+tcMsg,'NEXT ROUND',function(){round++;beginRound();});
+      showGameOverlay(T('go_ko')+'\n'+wname+' '+T('go_wins')+tcMsg,T('go_next_round'),function(){round++;beginRound();});
     }else{
       var fw=score[0]>score[1]?player.name:(score[1]>score[0]?'CPU IRON':'DRAW!');
       showGameOverlay('FINAL!\n'+fw+' WINS!\n+'+sessionTC+' TC','FIGHT AGAIN',function(){startGame();});
@@ -1255,7 +2012,7 @@ function showCelebration(){
   setTimeout(function(){overlay.classList.remove('show');overlay.innerHTML='';},2500);
 }
 
-/* ── CPU AI ── CPU can now roam the whole ring ── */
+/* ── CPU AI ── */
 var cpuIntent='approach',cpuIT=0;
 function updateCPU(){
   if(!p2||!p1||!gameActive||p2.stunned>0||p2.state==='ko'||p2.state==='hurt'){if(p2)p2.blocking=false;return;}
@@ -1272,11 +2029,9 @@ function updateCPU(){
   }
   p2.blocking=false;p2.walkDir=0;
   if(cpuIntent==='approach'){
-    /* CPU moves toward p1 — can go anywhere in the ring */
     if(p2.x>p1.x+60){p2.x-=1.8;p2.walkDir=-1;}
     else if(p2.x<p1.x-60){p2.x+=1.8;p2.walkDir=1;}
   }else if(cpuIntent==='retreat'){
-    /* Retreat away from p1, bounce off walls */
     if(p2.x>p1.x){p2.x=Math.min(W-60,p2.x+2.2);p2.walkDir=1;}
     else{p2.x=Math.max(60,p2.x-2.2);p2.walkDir=-1;}
   }else if(cpuIntent==='block'){
@@ -1284,7 +2039,6 @@ function updateCPU(){
   }else if(cpuIT%13===0){
     doAtk(p2,p1,cpuIntent);
   }
-  /* CPU stays in ring bounds — full ring */
   p2.x=Math.max(60,Math.min(W-60,p2.x));
 }
 
@@ -1292,26 +2046,18 @@ function updateCPU(){
 function bloodBurst(x,y,n){
   for(var i=0;i<n;i++){
     bloodDrops.push({
-      x:x+(Math.random()-.5)*10,
-      y:y,
-      vx:(Math.random()-.5)*6,
-      vy:-(Math.random()*5+2),
-      size:2+Math.random()*4,
-      life:40+Math.random()*30,
-      maxLife:70,
-      splat:false
+      x:x+(Math.random()-.5)*10,y:y,
+      vx:(Math.random()-.5)*6,vy:-(Math.random()*5+2),
+      size:2+Math.random()*4,life:40+Math.random()*30,maxLife:70,splat:false
     });
   }
 }
 function sweatBurst(x,y,n){
   for(var i=0;i<n;i++){
     sweatDrops.push({
-      x:x+(Math.random()-.5)*14,
-      y:y,
-      vx:(Math.random()-.5)*4,
-      vy:-(Math.random()*3+1),
-      size:1+Math.random()*2.5,
-      life:25+Math.random()*20
+      x:x+(Math.random()-.5)*14,y:y,
+      vx:(Math.random()-.5)*4,vy:-(Math.random()*3+1),
+      size:1+Math.random()*2.5,life:25+Math.random()*20
     });
   }
 }
@@ -1322,7 +2068,7 @@ function addFX(t,rx,ry,col){effects.push({text:t,relX:rx,relY:ry,col:col,life:22
 function doFlash(col){var el=document.getElementById('hitFlash');el.style.background=col;el.style.opacity='1';setTimeout(function(){el.style.opacity='0';},95);}
 function doShakeEffect(amt){shakeAmt=amt;shakeDur=15;}
 
-/* ── DRAW FIGHTER (human, no hat, block covers face) ── */
+/* ── DRAW FIGHTER ── */
 function fr(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
 
 function drawFighter(f){
@@ -1332,322 +2078,159 @@ function drawFighter(f){
   var isKO=f.state==='ko';
   var isJab=f.state==='jab',isHeavy=f.state==='heavy';
   var isBlk=f.blocking||(f.blockAnim>1);
-
-  /* Skin tones */
   var skin='#c87040',skinD='#9a5020',skinL='#e09060';
-
-  /* Colors from fighter */
   var sc1=f.shortCol1,sc2=f.shortCol2;
   var gc=f.gloveCol,gs=f.gloveShadow;
-
   if(!isKO){f.bobPhase+=0.1;if(f.walkDir!==0)f.legPhase+=0.22;}
   var bob=isKO?0:Math.sin(f.bobPhase)*2.2;
   var leg=Math.sin(f.legPhase)*9;
-
   ctx.save();
   ctx.translate(cx,cy+bob);
-
   if(isKO){
-    /* KO sprawl */
     ctx.save();ctx.rotate(dir*0.48);
-    fr(-22,-12,44,20,sc1);
-    fr(-18,-30,36,20,skin);
-    /* head */
-    fr(-10,-50,20,20,skin);
-    fr(dir>0?-10:-2,-54,10,10,skinD);
-    /* arm on ground */
-    fr(dir>0?10:-22,-25,14,22,skin);
-    fr(dir>0?18:-20,-10,16,14,gc);
+    fr(-22,-12,44,20,sc1);fr(-18,-30,36,20,skin);
+    fr(-10,-50,20,20,skin);fr(dir>0?-10:-2,-54,10,10,skinD);
+    fr(dir>0?10:-22,-25,14,22,skin);fr(dir>0?18:-20,-10,16,14,gc);
     ctx.restore();
   }else{
-    /* ── LEGS & BOOTS ── */
     var lx=dir>0?-13:1,rx=dir>0?1:-13;
-    /* Boot shadow */
     fr(rx-leg/2+2,4,13,12,'#111');fr(lx+leg/2+2,4,13,12,'#111');
-    /* Boot */
     fr(rx-leg/2,0,14,14,'#2a2a44');fr(rx-leg/2+1,1,12,12,'#1a1a33');
     fr(lx+leg/2,0,14,14,'#2a2a44');fr(lx+leg/2+1,1,12,12,'#1a1a33');
-    /* White sole */
     fr(rx-leg/2,11,14,3,'#cccccc');fr(lx+leg/2,11,14,3,'#cccccc');
-
-    /* ── SHORTS ── */
-    fr(-18,-24,36,28,sc1);
-    /* waistband */
-    fr(-18,-27,36,6,sc2);
-    /* center stripe */
-    fr(-3,-24,6,28,sc2);
-    /* belt */
-    fr(-18,-19,36,3,'#ffffff');
-    /* leg hems */
-    fr(-18,-1,16,3,sc2);fr(2,-1,16,3,sc2);
-
-    /* ── TORSO (bare skin) ── */
+    fr(-18,-24,36,28,sc1);fr(-18,-27,36,6,sc2);fr(-3,-24,6,28,sc2);
+    fr(-18,-19,36,3,'#ffffff');fr(-18,-1,16,3,sc2);fr(2,-1,16,3,sc2);
     fr(-14,-56,28,34,skin);
-    /* muscle definition */
-    fr(dir>0?-4:-8,-52,8,24,skinD);
-    fr(-12,-52,4,20,skinD);
-    fr(8,-52,4,20,skinD);
-    /* abs lines */
+    fr(dir>0?-4:-8,-52,8,24,skinD);fr(-12,-52,4,20,skinD);fr(8,-52,4,20,skinD);
     fr(-10,-50,20,2,skinD);fr(-10,-44,20,2,skinD);fr(-10,-38,20,2,skinD);
-    /* pecs */
-    fr(-11,-60,10,8,skin);fr(1,-60,10,8,skin);
-    fr(-11,-60,3,8,skinD);fr(1,-60,3,8,skinD);
-
-    /* ── ARMS ── */
-    /* Smooth punch extension using punchT progress (sine arc: extend fast, retract slow) */
+    fr(-11,-60,10,8,skin);fr(1,-60,10,8,skin);fr(-11,-60,3,8,skinD);fr(1,-60,3,8,skinD);
     var jabProgress=0,hvyProgress=0;
-    if(isJab&&f.punchTMax>0){
-      var tNorm=1-(f.punchT/f.punchTMax); /* 0->1 */
-      jabProgress=Math.sin(tNorm*Math.PI); /* peaks at 0.5, returns to 0 */
-    }
+    if(isJab&&f.punchTMax>0){var tNorm=1-(f.punchT/f.punchTMax);jabProgress=Math.sin(tNorm*Math.PI);}
     if(isHeavy&&f.punchTMax>0){
       var tNorm2=1-(f.punchT/f.punchTMax);
-      /* Heavy: slow windup (0-0.5) then FAST release (0.5-0.7) then slow retract */
-      if(tNorm2<0.5) hvyProgress=tNorm2*0.3; /* barely moves during charge */
-      else hvyProgress=0.15+Math.sin((tNorm2-0.5)*Math.PI)*0.85; /* explosive extension */
+      if(tNorm2<0.5)hvyProgress=tNorm2*0.3;
+      else hvyProgress=0.15+Math.sin((tNorm2-0.5)*Math.PI)*0.85;
     }
-    var jabOff=jabProgress*52*dir;   /* jab extends 52px */
-    var hvyOff=hvyProgress*68*dir;   /* heavy extends 68px */
-
+    var jabOff=jabProgress*52*dir;
+    var hvyOff=hvyProgress*68*dir;
     if(isBlk){
-      /* BLOCK: both arms raised, cross guard covers face */
-      var ba=Math.min(f.blockAnim,8);
-      var bLift=ba*1.5;
-      /* Upper arms */
-      fr(dir>0?-14:-2,-60+bLift*0.3,12,28,skinD);
-      fr(dir>0?2:-14,-58+bLift*0.3,12,28,skin);
-      /* Forearms crossed in front of face */
-      fr(dir>0?-10:-6,-74+bLift*0.2,16,10,skin);
-      fr(dir>0?-6:-10,-70+bLift*0.2,12,14,skin);
-      /* Gloves covering face */
-      var gox=dir>0?-14:-2, goy=-82+bLift*0.15;
-      /* Left glove */
-      fr(gox-2,goy-2,22,18,'#000');
-      fr(gox,goy,20,16,gs);fr(gox,goy,20,16,gc);
-      fr(gox,goy,6,16,gs);
-      fr(gox,goy+2,3,12,'rgba(255,255,255,0.3)');
-      /* Right glove overlapping */
+      var ba=Math.min(f.blockAnim,8);var bLift=ba*1.5;
+      fr(dir>0?-14:-2,-60+bLift*0.3,12,28,skinD);fr(dir>0?2:-14,-58+bLift*0.3,12,28,skin);
+      fr(dir>0?-10:-6,-74+bLift*0.2,16,10,skin);fr(dir>0?-6:-10,-70+bLift*0.2,12,14,skin);
+      var gox=dir>0?-14:-2,goy=-82+bLift*0.15;
+      fr(gox-2,goy-2,22,18,'#000');fr(gox,goy,20,16,gs);fr(gox,goy,20,16,gc);
+      fr(gox,goy,6,16,gs);fr(gox,goy+2,3,12,'rgba(255,255,255,0.3)');
       var go2x=dir>0?-2:-14,go2y=goy+10;
-      fr(go2x-2,go2y-2,22,18,'#000');
-      fr(go2x,go2y,20,16,gs);fr(go2x,go2y,20,16,gc);
+      fr(go2x-2,go2y-2,22,18,'#000');fr(go2x,go2y,20,16,gs);fr(go2x,go2y,20,16,gc);
       fr(go2x,go2y,6,16,gs);
     }else{
-      /* ── ARMS & GLOVES ── both same size, both animate ──
-         Front hand (near side): positioned at inside
-         Back hand (far side):  positioned at outside
-         On jab:   front hand extends forward
-         On heavy: back hand extends forward
-         Both bob gently in idle via bobPhase offset
-      */
-      var GW=20, GH=16; /* uniform glove size */
+      var GW=20,GH=16;
       var idleBobA=Math.sin(f.bobPhase)*2;
       var idleBobB=Math.sin(f.bobPhase+1.2)*2;
-
-      /* Front glove: extends on JAB (leadHand===0) */
       var frontExt=(isJab&&f.leadHand===0)?jabOff:0;
-      /* Back glove: extends on HEAVY (leadHand===1) */
       var backExt=(isHeavy&&f.leadHand===1)?hvyOff:0;
-
-      var GW=20,GH=16;
-
-      /* Front glove: extends on JAB (leadHand===0) */
-      var frontExt=(isJab&&f.leadHand===0)?jabOff:0;
-      /* Back glove: extends on HEAVY (leadHand===1) */
-      var backExt=(isHeavy&&f.leadHand===1)?hvyOff:0;
-
-      /* Glove resting X origins (shoulder) */
       var frontShoulderX=dir>0?-8:8-GW;
       var backShoulderX=dir>0?6:-6-GW;
-
-      /* Final glove positions */
-      var fgx=frontShoulderX+frontExt;
-      var fgy=-48+idleBobA;
-      var bgx=backShoulderX+backExt;
-      var bgy=-60+idleBobB;
-
-      /* ── Draw BACK arm first (behind body) ── */
-      /* Arm segment stretches from shoulder to glove */
+      var fgx=frontShoulderX+frontExt;var fgy=-48+idleBobA;
+      var bgx=backShoulderX+backExt;var bgy=-60+idleBobB;
       var backArmStartX=dir>0?8:-8;
       var backGloveCenterX=bgx+(dir>0?GW/2:-GW/2);
       var backArmLen=Math.max(12,Math.abs(backGloveCenterX-backArmStartX));
       var backArmX=dir>0?backArmStartX:backGloveCenterX;
-      fr(backArmX,-54+idleBobB,backArmLen,10,skinD);
-      /* Upper back arm */
-      fr(dir>0?2:-14,-64+idleBobB,12,14,skinD);
-
-      /* ── Draw FRONT arm (in front of body) ── */
+      fr(backArmX,-54+idleBobB,backArmLen,10,skinD);fr(dir>0?2:-14,-64+idleBobB,12,14,skinD);
       var frontArmStartX=dir>0?-14:2;
       var frontGloveCenterX=fgx+(dir>0?GW/2:-GW/2);
       var frontArmLen=Math.max(12,Math.abs(frontGloveCenterX-frontArmStartX));
       var frontArmX=dir>0?frontArmStartX:frontGloveCenterX;
-      fr(frontArmX,-52+idleBobA,frontArmLen,10,skin);
-      /* Upper front arm */
-      fr(dir>0?-14:2,-62+idleBobA,12,14,skin);
-
-      /* Heavy charge glow on fist during windup */
+      fr(frontArmX,-52+idleBobA,frontArmLen,10,skin);fr(dir>0?-14:2,-62+idleBobA,12,14,skin);
       if(isHeavy&&hvyProgress<0.15&&f.punchTMax>0){
         var chargeGlow=1-(hvyProgress/0.15);
-        ctx.save();
-        ctx.globalAlpha=chargeGlow*0.7;
-        ctx.shadowColor='#ff6600';ctx.shadowBlur=16+chargeGlow*10;
+        ctx.save();ctx.globalAlpha=chargeGlow*0.7;ctx.shadowColor='#ff6600';ctx.shadowBlur=16+chargeGlow*10;
         ctx.fillStyle='rgba(255,120,0,0.6)';
         var gCx=bgx+GW/2,gCy=bgy+GH/2;
         ctx.beginPath();ctx.arc(gCx,gCy,(GW/2+4+chargeGlow*8),0,Math.PI*2);ctx.fill();
         ctx.restore();
       }
-
-      /* Heavy punch motion trail */
       if(isHeavy&&hvyProgress>0.14&&hvyProgress<0.85){
         var trailAlpha=(hvyProgress-0.14)*0.5;
         ctx.save();ctx.globalAlpha=Math.min(0.4,trailAlpha);
-        /* trail behind the fist */
         var trailOff=dir>0?-12:12;
-        ctx.fillStyle='#ff4400';
-        ctx.fillRect(bgx+trailOff,bgy+2,GW*0.6,GH-4);
-        ctx.fillStyle='#ffaa00';
-        ctx.fillRect(bgx+trailOff*1.6,bgy+4,GW*0.4,GH-8);
+        ctx.fillStyle='#ff4400';ctx.fillRect(bgx+trailOff,bgy+2,GW*0.6,GH-4);
+        ctx.fillStyle='#ffaa00';ctx.fillRect(bgx+trailOff*1.6,bgy+4,GW*0.4,GH-8);
         ctx.restore();
       }
-
-      /* Helper: draw one glove */
       function drawGlove(gx,gy,isActive,activeType){
-        fr(gx-2,gy-2,GW+4,GH+4,'#000');
-        fr(gx,gy,GW,GH,gs);fr(gx,gy,GW,GH,gc);
-        fr(gx,gy,6,GH,gs);
-        fr(gx,gy+2,3,GH-4,'rgba(255,255,255,0.28)');
-        /* Highlight edge */
+        fr(gx-2,gy-2,GW+4,GH+4,'#000');fr(gx,gy,GW,GH,gs);fr(gx,gy,GW,GH,gc);
+        fr(gx,gy,6,GH,gs);fr(gx,gy+2,3,GH-4,'rgba(255,255,255,0.28)');
         fr(gx+GW-3,gy+2,2,GH-4,'rgba(255,255,255,0.15)');
-        if(isActive&&activeType==='jab'){
-          fr(gx+(dir>0?GW-2:-6),gy+1,8,7,'#ffff00');
-          fr(gx+(dir>0?GW-2:-6),gy+7,8,5,'#ffaa00');
-        }
+        if(isActive&&activeType==='jab'){fr(gx+(dir>0?GW-2:-6),gy+1,8,7,'#ffff00');fr(gx+(dir>0?GW-2:-6),gy+7,8,5,'#ffaa00');}
         if(isActive&&activeType==='heavy'&&hvyProgress>0.14){
-          /* Big impact star */
           var ix=gx+(dir>0?GW:-2),iy=gy+GH/2;
           ctx.save();ctx.globalAlpha=Math.min(1,(hvyProgress-0.14)*4);
           ctx.fillStyle='#ff6600';
-          for(var si=0;si<6;si++){
-            var sa=si*Math.PI/3,sl=8+Math.random()*4;
-            ctx.fillRect(ix+Math.cos(sa)*4,iy+Math.sin(sa)*4,3,3);
-          }
+          for(var si=0;si<6;si++){var sa=si*Math.PI/3;ctx.fillRect(ix+Math.cos(sa)*4,iy+Math.sin(sa)*4,3,3);}
           ctx.fillStyle='#ffff00';ctx.fillRect(ix-3,iy-3,6,6);
           ctx.restore();
         }
       }
-
       drawGlove(fgx,fgy,isJab&&f.leadHand===0,'jab');
       drawGlove(bgx,bgy,isHeavy&&f.leadHand===1,'heavy');
     }
-
-    /* ── HEAD (human, no hat) ── */
     if(isBlk&&f.blockAnim>3){
-      /* Head is partially hidden behind gloves - just show top of head */
-      var ha=Math.min(f.blockAnim/8,1);
-      var headY=-88+(1-ha)*14;
-      fr(-11,headY,22,Math.floor(28*ha),skin);
-      /* hair */
-      fr(-11,headY,22,5,'#2a1a08');
+      var ha=Math.min(f.blockAnim/8,1);var headY=-88+(1-ha)*14;
+      fr(-11,headY,22,Math.floor(28*ha),skin);fr(-11,headY,22,5,'#2a1a08');
       fr(dir>0?-11:-3,headY+5,8,4,'#2a1a08');
     }else{
-      /* Full head */
-      fr(-11,-88,22,28,skin);
-      fr(dir>0?-11:-3,-88,8,28,skinD);
-      /* Eyes */
+      fr(-11,-88,22,28,skin);fr(dir>0?-11:-3,-88,8,28,skinD);
       fr(dir>0?3:-9,-78,6,5,'#1a1a1a');fr(dir>0?4:-8,-77,3,3,skinL);fr(dir>0?5:-9,-77,2,2,'#ffffff');
-      /* Nose */
-      fr(dir>0?2:-4,-72,4,6,skinD);
-      /* Mouth */
-      fr(dir>0?1:-5,-63,10,3,'#7a3010');
-      /* Ear */
+      fr(dir>0?2:-4,-72,4,6,skinD);fr(dir>0?1:-5,-63,10,3,'#7a3010');
       fr(dir>0?-14:-2,-80,5,10,skin);fr(dir>0?-13:-3,-79,3,8,skinD);
-      /* Hair - short */
-      fr(-12,-92,24,8,'#2a1a08');
-      fr(-11,-94,22,4,'#2a1a08');
-      fr(-8,-95,16,3,'#2a1a08');
-      fr(dir>0?-12:-2,-90,8,6,'#2a1a08');
-      /* Eyebrow */
-      fr(dir>0?2:-8,-83,8,2,'#2a1a08');
+      fr(-12,-92,24,8,'#2a1a08');fr(-11,-94,22,4,'#2a1a08');fr(-8,-95,16,3,'#2a1a08');
+      fr(dir>0?-12:-2,-90,8,6,'#2a1a08');fr(dir>0?2:-8,-83,8,2,'#2a1a08');
     }
-
-    /* HURT FLASH */
-    if(f.hurtFlash>0&&f.hurtFlash%3<2){
-      ctx.fillStyle='rgba(255,80,0,0.45)';ctx.fillRect(-18,-96,36,98);
-    }
-
-    /* CELEBRATION animation */
+    if(f.hurtFlash>0&&f.hurtFlash%3<2){ctx.fillStyle='rgba(255,80,0,0.45)';ctx.fillRect(-18,-96,36,98);}
     if(f.celebAnim>0){
-      f.celebAnim--;
-      var phase=f.celebAnim;
-      /* Arms raised victory pose */
+      f.celebAnim--;var phase=f.celebAnim;
       if(phase>60){
-        /* Both arms up */
-        fr(dir>0?-20:-2,-88,12,34,skin);
-        fr(dir>0?2:-14,-86,12,34,skin);
-        /* Gloves raised */
+        fr(dir>0?-20:-2,-88,12,34,skin);fr(dir>0?2:-14,-86,12,34,skin);
         fr(dir>0?-22:-4,-118,18,14,'#000');fr(dir>0?-21:-3,-117,16,12,gc);
         fr(dir>0?4:-22,-116,18,14,'#000');fr(dir>0?5:-21,-115,16,12,gc);
-      }else{
-        /* Jumping/dancing - bob faster */
-        var jmp=Math.abs(Math.sin(phase*0.2))*10;
-        ctx.translate(0,-jmp);
-      }
-      /* Star bursts */
-      if(phase%8===0){
-        burst(cx+(Math.random()-.5)*60,GROUND-120,'#ffdd00',5);
-        burst(cx+(Math.random()-.5)*60,GROUND-120,'#ff4400',3);
-      }
+      }else{var jmp=Math.abs(Math.sin(phase*0.2))*10;ctx.translate(0,-jmp);}
+      if(phase%8===0){burst(cx+(Math.random()-.5)*60,GROUND-120,'#ffdd00',5);burst(cx+(Math.random()-.5)*60,GROUND-120,'#ff4400',3);}
     }
   }
-
-  /* ── BIG BLUE SHIELD above fighter while blocking ── */
   if(isBlk&&!isKO&&f.blockAnim>1){
-    var bAlpha=Math.min(1,f.blockAnim/8);
-    var bPulse=1+Math.sin(Date.now()*0.012)*0.07;
-    ctx.save();
-    ctx.globalAlpha=bAlpha;
-    ctx.scale(bPulse,bPulse);
+    var bAlpha=Math.min(1,f.blockAnim/8);var bPulse=1+Math.sin(Date.now()*0.012)*0.07;
+    ctx.save();ctx.globalAlpha=bAlpha;ctx.scale(bPulse,bPulse);
     var sw=34,sh=40,sx2=-sw/2,sy2=-134;
-    /* glow */
     ctx.shadowColor='#44aaff';ctx.shadowBlur=20;
-    /* dark bg */
     ctx.fillStyle='#001a44';
-    ctx.beginPath();
-    ctx.moveTo(sx2,sy2);ctx.lineTo(sx2+sw,sy2);
+    ctx.beginPath();ctx.moveTo(sx2,sy2);ctx.lineTo(sx2+sw,sy2);
     ctx.lineTo(sx2+sw,sy2+sh*0.6);
     ctx.quadraticCurveTo(sx2+sw,sy2+sh,sx2+sw/2,sy2+sh+8);
     ctx.quadraticCurveTo(sx2,sy2+sh,sx2,sy2+sh*0.6);
     ctx.closePath();ctx.fill();
-    /* blue face */
-    ctx.shadowBlur=0;
-    ctx.fillStyle='rgba(20,90,255,0.93)';
-    ctx.beginPath();
-    ctx.moveTo(sx2+3,sy2+3);ctx.lineTo(sx2+sw-3,sy2+3);
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(20,90,255,0.93)';
+    ctx.beginPath();ctx.moveTo(sx2+3,sy2+3);ctx.lineTo(sx2+sw-3,sy2+3);
     ctx.lineTo(sx2+sw-3,sy2+sh*0.6);
     ctx.quadraticCurveTo(sx2+sw-3,sy2+sh-2,sx2+sw/2,sy2+sh+4);
     ctx.quadraticCurveTo(sx2+3,sy2+sh-2,sx2+3,sy2+sh*0.6);
     ctx.closePath();ctx.fill();
-    /* rim */
     ctx.strokeStyle='#88ddff';ctx.lineWidth=2;
-    ctx.beginPath();
-    ctx.moveTo(sx2+3,sy2+3);ctx.lineTo(sx2+sw-3,sy2+3);
+    ctx.beginPath();ctx.moveTo(sx2+3,sy2+3);ctx.lineTo(sx2+sw-3,sy2+3);
     ctx.lineTo(sx2+sw-3,sy2+sh*0.6);
     ctx.quadraticCurveTo(sx2+sw-3,sy2+sh-2,sx2+sw/2,sy2+sh+4);
     ctx.quadraticCurveTo(sx2+3,sy2+sh-2,sx2+3,sy2+sh*0.6);
     ctx.closePath();ctx.stroke();
-    /* white cross */
     ctx.fillStyle='#ffffff';ctx.shadowColor='#aaddff';ctx.shadowBlur=8;
-    ctx.fillRect(sx2+sw/2-3,sy2+9,6,22);
-    ctx.fillRect(sx2+7,sy2+sh/2-4,sw-14,6);
-    ctx.shadowBlur=0;
-    ctx.restore();
+    ctx.fillRect(sx2+sw/2-3,sy2+9,6,22);ctx.fillRect(sx2+7,sy2+sh/2-4,sw-14,6);
+    ctx.shadowBlur=0;ctx.restore();
   }
-
   ctx.restore();
 }
 
 function drawScene(){
-  if(tutMode){ drawGymScene(); return; }
-  /* ── BOXING RING ── */
+  if(tutMode){drawGymScene();return;}
   var sky=ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#08001a');sky.addColorStop(0.7,'#180030');sky.addColorStop(1,'#2a0015');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
@@ -1672,116 +2255,55 @@ function drawScene(){
 }
 
 function drawGymScene(){
-  /* ── GYM BACKGROUND ── fill full canvas first */
-  fr(0,0,W,H,'#0d0808');
-  /* ceiling */
-  fr(0,0,W,H*0.55,'#1a1008');
-  /* brick back wall */
+  fr(0,0,W,H,'#0d0808');fr(0,0,W,H*0.55,'#1a1008');
   var brickW=40,brickH=18;
   for(var row=0;row<9;row++){
     for(var col=0;col<18;col++){
-      var ox=(row%2===0)?0:brickW/2;
-      var bx2=col*brickW-ox,by2=row*brickH;
-      ctx.fillStyle=(row+col)%3===0?'#2a1208':'#221008';
-      ctx.fillRect(bx2+1,by2+1,brickW-2,brickH-2);
-      ctx.fillStyle='#1a0a04';
-      ctx.fillRect(bx2,by2,brickW,1);
-      ctx.fillRect(bx2,by2,1,brickH);
+      var ox=(row%2===0)?0:brickW/2;var bx2=col*brickW-ox,by2=row*brickH;
+      ctx.fillStyle=(row+col)%3===0?'#2a1208':'#221008';ctx.fillRect(bx2+1,by2+1,brickW-2,brickH-2);
+      ctx.fillStyle='#1a0a04';ctx.fillRect(bx2,by2,brickW,1);ctx.fillRect(bx2,by2,1,brickH);
     }
   }
-  /* GYM banner */
-  fr(180,14,280,32,'#1a0000');
-  fr(182,16,276,28,'#2a0000');
+  fr(180,14,280,32,'#1a0000');fr(182,16,276,28,'#2a0000');
   ctx.font='bold 11px "Press Start 2P"';ctx.fillStyle='#ffdd00';ctx.textAlign='center';
   ctx.fillText('IRON GYM',W/2,36);ctx.textAlign='left';
   fr(182,44,276,2,'#ffdd00');
-
-  /* ── EQUIPMENT IN BACKGROUND ── */
-  /* Speed bag on right wall - only in bag phase */
-  if(tutPhase===1){
-    fr(520,80,8,30,'#888'); /* chain */
-    fr(504,110,40,50,'#8B3300'); /* speed bag body */
-    fr(506,112,36,46,'#a04400');
-    fr(514,112,12,46,'#cc5500'); /* shine */
-    fr(502,108,44,8,'#555'); /* mount */
-  }
-  /* Weight rack left side */
-  fr(20,120,70,6,'#333');
-  fr(22,126,8,60,'#555');fr(22,122,8,8,'#444');
-  fr(60,126,8,60,'#555');fr(60,122,8,8,'#444');
-  /* weights */
-  for(var wi=0;wi<3;wi++){
-    fr(30+wi*14,130,10,40,'#444');
-    fr(31+wi*14,132,8,36,'#555');
-  }
-  /* Poster on left wall */
+  if(tutPhase===1){fr(520,80,8,30,'#888');fr(504,110,40,50,'#8B3300');fr(506,112,36,46,'#a04400');fr(514,112,12,46,'#cc5500');fr(502,108,44,8,'#555');}
+  fr(20,120,70,6,'#333');fr(22,126,8,60,'#555');fr(22,122,8,8,'#444');fr(60,126,8,60,'#555');fr(60,122,8,8,'#444');
+  for(var wi=0;wi<3;wi++){fr(30+wi*14,130,10,40,'#444');fr(31+wi*14,132,8,36,'#555');}
   fr(8,60,60,80,'#0a0000');fr(10,62,56,76,'#1a0000');
   ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='#ff2244';ctx.textAlign='center';
   ctx.fillText('FIGHT',38,90);ctx.fillText('HARD',38,102);ctx.textAlign='left';
-  /* Poster on right wall */
   fr(W-68,60,60,80,'#0a0000');fr(W-66,62,56,76,'#001a00');
   ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='#00cc55';ctx.textAlign='center';
   ctx.fillText('TRAIN',W-38,90);ctx.fillText('WIN',W-38,102);ctx.textAlign='left';
-
-  /* ── OVERHEAD GYM LIGHTS ── */
   var lightPositions=[120,320,520];
   lightPositions.forEach(function(lx){
-    /* light fixture */
-    fr(lx-15,0,30,12,'#333');
-    fr(lx-18,10,36,6,'#555');
-    /* light cone */
-    ctx.save();ctx.globalAlpha=0.07+Math.sin(Date.now()*0.002)*0.01;
-    ctx.fillStyle='#ffffcc';
-    ctx.beginPath();
-    ctx.moveTo(lx-18,16);ctx.lineTo(lx+18,16);
-    ctx.lineTo(lx+80,GROUND);ctx.lineTo(lx-80,GROUND);
-    ctx.closePath();ctx.fill();
-    ctx.restore();
-    /* bulb glow */
-    ctx.save();ctx.globalAlpha=0.9;
-    ctx.fillStyle='#ffffaa';ctx.fillRect(lx-8,11,16,5);
-    ctx.restore();
+    fr(lx-15,0,30,12,'#333');fr(lx-18,10,36,6,'#555');
+    ctx.save();ctx.globalAlpha=0.07+Math.sin(Date.now()*0.002)*0.01;ctx.fillStyle='#ffffcc';
+    ctx.beginPath();ctx.moveTo(lx-18,16);ctx.lineTo(lx+18,16);ctx.lineTo(lx+80,GROUND);ctx.lineTo(lx-80,GROUND);
+    ctx.closePath();ctx.fill();ctx.restore();
+    ctx.save();ctx.globalAlpha=0.9;ctx.fillStyle='#ffffaa';ctx.fillRect(lx-8,11,16,5);ctx.restore();
   });
-
-  /* ── WOOD FLOOR ── */
-  /* floorboards */
   for(var fi=0;fi<W;fi+=32){
-    ctx.fillStyle=fi%64===0?'#5a3a10':'#4a2e08';
-    ctx.fillRect(fi,GROUND,32,H-GROUND);
-    ctx.fillStyle='#3a2006';
-    ctx.fillRect(fi,GROUND,1,H-GROUND);
+    ctx.fillStyle=fi%64===0?'#5a3a10':'#4a2e08';ctx.fillRect(fi,GROUND,32,H-GROUND);
+    ctx.fillStyle='#3a2006';ctx.fillRect(fi,GROUND,1,H-GROUND);
   }
-  /* floor sheen */
-  ctx.save();ctx.globalAlpha=0.07;
-  ctx.fillStyle='#ffffff';
-  lightPositions.forEach(function(lx){
-    ctx.beginPath();ctx.ellipse(lx,GROUND+2,70,8,0,0,Math.PI*2);ctx.fill();
-  });
+  ctx.save();ctx.globalAlpha=0.07;ctx.fillStyle='#ffffff';
+  lightPositions.forEach(function(lx){ctx.beginPath();ctx.ellipse(lx,GROUND+2,70,8,0,0,Math.PI*2);ctx.fill();});
   ctx.restore();
-  /* floor edge */
   fr(0,GROUND,W,3,'#3a2006');
-
-  /* ── MIRROR on back wall (center) ── */
-  fr(W/2-50,50,100,H*0.45,'#0a1a2a');
-  fr(W/2-48,52,96,H*0.43,'#0d2030');
-  /* mirror frame */
-  ctx.strokeStyle='#888';ctx.lineWidth=3;
-  ctx.strokeRect(W/2-50,50,100,H*0.45);
-  /* mirror reflection - faint horizontal lines */
-  ctx.save();ctx.globalAlpha=0.06;
-  ctx.fillStyle='#aaddff';
-  for(var mi=0;mi<8;mi++) ctx.fillRect(W/2-48,52+mi*22,96,10);
+  fr(W/2-50,50,100,H*0.45,'#0a1a2a');fr(W/2-48,52,96,H*0.43,'#0d2030');
+  ctx.strokeStyle='#888';ctx.lineWidth=3;ctx.strokeRect(W/2-50,50,100,H*0.45);
+  ctx.save();ctx.globalAlpha=0.06;ctx.fillStyle='#aaddff';
+  for(var mi=0;mi<8;mi++)ctx.fillRect(W/2-48,52+mi*22,96,10);
   ctx.restore();
-  ctx.font='bold 5px "Press Start 2P"';ctx.fillStyle='rgba(100,160,200,0.4)';
-  ctx.textAlign='center';ctx.fillText('MIRROR',W/2,H*0.5-5);ctx.textAlign='left';
-
-  /* ── PROMPT: walk up to bag ── */
   if(tutPhase===1&&p1){
     var dist=Math.abs(p1.x-bag.x);
     if(dist>120){
       ctx.save();ctx.globalAlpha=0.85+Math.sin(Date.now()*0.006)*0.15;
       ctx.font='bold 7px "Press Start 2P"';ctx.fillStyle='#00ffcc';ctx.textAlign='center';
-      ctx.fillText('WALK UP TO THE BAG  A/D',W/2,GROUND-10);
+      ctx.fillText(T('tut_walk'),W/2,GROUND-10);
       ctx.restore();
     }
     ctx.textAlign='left';
@@ -1789,59 +2311,40 @@ function drawGymScene(){
 }
 
 function drawEffects(){
-  /* Blood drops */
   bloodDrops.forEach(function(bd){
     var alpha=bd.life/bd.maxLife;
     ctx.save();ctx.globalAlpha=Math.min(1,alpha*1.4);
     if(bd.splat){
-      /* splat puddle on floor */
-      ctx.fillStyle='#aa0000';
-      ctx.beginPath();ctx.ellipse(bd.x,bd.y,bd.size*1.8,bd.size*0.6,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#cc1111';
-      ctx.beginPath();ctx.ellipse(bd.x,bd.y,bd.size*0.8,bd.size*0.3,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#aa0000';ctx.beginPath();ctx.ellipse(bd.x,bd.y,bd.size*1.8,bd.size*0.6,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#cc1111';ctx.beginPath();ctx.ellipse(bd.x,bd.y,bd.size*0.8,bd.size*0.3,0,0,Math.PI*2);ctx.fill();
     }else{
-      /* flying teardrop */
-      ctx.fillStyle='#cc0000';
-      ctx.fillRect(Math.round(bd.x),Math.round(bd.y),Math.ceil(bd.size),Math.ceil(bd.size));
-      ctx.fillStyle='#ff2222';
-      ctx.fillRect(Math.round(bd.x),Math.round(bd.y),Math.ceil(bd.size*0.5),Math.ceil(bd.size*0.5));
+      ctx.fillStyle='#cc0000';ctx.fillRect(Math.round(bd.x),Math.round(bd.y),Math.ceil(bd.size),Math.ceil(bd.size));
+      ctx.fillStyle='#ff2222';ctx.fillRect(Math.round(bd.x),Math.round(bd.y),Math.ceil(bd.size*0.5),Math.ceil(bd.size*0.5));
     }
     ctx.restore();
   });
-  /* Sweat drops */
   sweatDrops.forEach(function(sw2){
     var alpha=sw2.life/25;
-    ctx.save();ctx.globalAlpha=Math.min(0.85,alpha);
-    ctx.fillStyle='#aaddff';
+    ctx.save();ctx.globalAlpha=Math.min(0.85,alpha);ctx.fillStyle='#aaddff';
     ctx.beginPath();ctx.ellipse(sw2.x,sw2.y,sw2.size*0.6,sw2.size,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(Math.round(sw2.x-sw2.size*0.2),Math.round(sw2.y-sw2.size*0.3),1,1);
+    ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(sw2.x-sw2.size*0.2),Math.round(sw2.y-sw2.size*0.3),1,1);
     ctx.restore();
   });
-  /* Regular particles */
-  particles.forEach(function(pt){
-    ctx.fillStyle=pt.col;ctx.fillRect(Math.round(pt.x),Math.round(pt.y),Math.ceil(pt.size),Math.ceil(pt.size));
-  });
+  particles.forEach(function(pt){ctx.fillStyle=pt.col;ctx.fillRect(Math.round(pt.x),Math.round(pt.y),Math.ceil(pt.size),Math.ceil(pt.size));});
   effects.forEach(function(e){
     var alpha=e.life/e.maxLife;
-    ctx.save();ctx.globalAlpha=alpha;
-    ctx.font='bold 11px "Press Start 2P"';ctx.fillStyle=e.col;
-    ctx.textAlign='center';ctx.fillText(e.text,e.relX,GROUND+e.relY);
-    ctx.restore();
+    ctx.save();ctx.globalAlpha=alpha;ctx.font='bold 11px "Press Start 2P"';ctx.fillStyle=e.col;
+    ctx.textAlign='center';ctx.fillText(e.text,e.relX,GROUND+e.relY);ctx.restore();
   });
 }
 
 function drawStamBars(){
   if(!p1||!p2)return;
-  function drawBar(f,x){
-    fr(x-1,H-27,92,8,'#000');fr(x,H-26,90,6,'#333');
-    fr(x,H-26,Math.floor(90*f.stamina/100),6,'#00cc55');
-  }
+  function drawBar(f,x){fr(x-1,H-27,92,8,'#000');fr(x,H-26,90,6,'#333');fr(x,H-26,Math.floor(90*f.stamina/100),6,'#00cc55');}
   drawBar(p1,55);drawBar(p2,W-145);
   function drawHeavyBar(f,x){
     if(!f.heavyCD||f.heavyCD<=0)return;
-    fr(x-1,H-17,92,7,'#220000');
-    fr(x,H-16,Math.floor(90*f.heavyCD/HEAVY_CD),6,'#ff4400');
+    fr(x-1,H-17,92,7,'#220000');fr(x,H-16,Math.floor(90*f.heavyCD/HEAVY_CD),6,'#ff4400');
   }
   drawHeavyBar(p1,55);drawHeavyBar(p2,W-145);
 }
@@ -1853,14 +2356,13 @@ function drawKOText(){
   var gr=ctx.createLinearGradient(0,H/2-60,0,H/2);
   gr.addColorStop(0,'#ffff00');gr.addColorStop(1,'#ff4400');
   ctx.fillStyle='#000';ctx.fillText('K.O.!!!',W/2+4,H/2-22+2);
-  ctx.fillStyle=gr;ctx.fillText('K.O.!!!',W/2,H/2-22);
-  ctx.textAlign='left';
+  ctx.fillStyle=gr;ctx.fillText('K.O.!!!',W/2,H/2-22);ctx.textAlign='left';
 }
 
 /* ── UPDATE ── */
 function update(){
   if(!p1)return;
-  if(!p2&&!tutMode)return; /* allow update with no p2 in tutorial bag phase */
+  if(!p2&&!tutMode)return;
   if(onlineMode&&!isHost){
     guestSendInputs();
     var np=[],ne=[],nb=[],nsw=[];
@@ -1870,10 +2372,8 @@ function update(){
     for(var m=0;m<sweatDrops.length;m++){var sw2=sweatDrops[m];sw2.x+=sw2.vx;sw2.y+=sw2.vy;sw2.vy+=0.3;sw2.life--;if(sw2.life>0)nsw.push(sw2);}
     particles=np;effects=ne;bloodDrops=nb;sweatDrops=nsw;return;
   }
-  /* p1 movement */
   if(!p1.stunned&&p1.state!=='ko'&&p1.state!=='hurt'){
     p1.walkDir=0;
-    /* In tutorial: lock movement while reading instruction (not waiting for action) */
     var moveLocked=tutMode&&!tutWaiting;
     if(!moveLocked){
       var rightLimit=tutMode?(tutPhase===1?bag.x+20:p2?p2.x-60:W-80):p2?p2.x-60:W-80;
@@ -1881,32 +2381,21 @@ function update(){
       if((K['KeyD']||K['ArrowRight'])&&p1.x<rightLimit){p1.x+=2.5;p1.walkDir=1;}
     }
   }
-  /* p2 movement */
   if(onlineMode){applyGuestInputs();}else if(tutMode){updateTrainer();}else{updateCPU();}
-  /* Tick all fighter state */
   [p1,p2].filter(Boolean).forEach(function(f){
-    if(f.punchCD>0)f.punchCD--;
-    if(f.punchT>0)f.punchT--;
-    if(f.jabCD>0)f.jabCD--;
-    if(f.heavyCD>0)f.heavyCD--;
+    if(f.punchCD>0)f.punchCD--;if(f.punchT>0)f.punchT--;
+    if(f.jabCD>0)f.jabCD--;if(f.heavyCD>0)f.heavyCD--;
     if(f.blockCD>0){f.blockCD--;if(f.blockCD>0)f.blocking=false;}
-    if(f.stunned>0)f.stunned--;
-    if(f.hurtFlash>0)f.hurtFlash--;
+    if(f.stunned>0)f.stunned--;if(f.hurtFlash>0)f.hurtFlash--;
     if(f.stateTimer>0){f.stateTimer--;if(f.stateTimer<=0&&f.state!=='ko')f.state='idle';}
-    /* Auto-restore guard after punch-while-blocking */
     if(f.postBlockRestore>0){
       f.postBlockRestore--;
-      if(f.postBlockRestore<=0&&!f.stunned&&f.state!=='ko'&&f.state!=='hurt'){
-        f.blocking=true;
-      }
+      if(f.postBlockRestore<=0&&!f.stunned&&f.state!=='ko'&&f.state!=='hurt')f.blocking=true;
     }
     if(!f.blocking)f.stamina=Math.min(100,f.stamina+0.12);
-    if(f.blocking)f.stamina=Math.max(0,f.stamina-0.18); /* holding block drains stamina */
-    /* Block anim lerp */
+    if(f.blocking)f.stamina=Math.max(0,f.stamina-0.18);
     if(f.blocking){
       if(f.blockAnim<8)f.blockAnim=Math.min(8,f.blockAnim+2);
-      /* Only count as 'held' once fully raised */
-      /* track when guard first became fully raised */
       if(f.blockAnim>=8&&!f.wasBlocking){f.blockRaisedAt=Date.now();f.wasBlocking=true;}
     }else{
       if(f.blockAnim>0)f.blockAnim=Math.max(0,f.blockAnim-2);
@@ -1920,38 +2409,23 @@ function update(){
   for(var j=0;j<effects.length;j++){var ef=effects[j];ef.relY-=0.55;ef.life--;if(ef.life>0)ne.push(ef);}
   for(var k=0;k<bloodDrops.length;k++){
     var bd=bloodDrops[k];
-    if(!bd.splat){bd.x+=bd.vx;bd.y+=bd.vy;bd.vy+=0.45;bd.vx*=0.9;
-      if(bd.y>=GROUND){bd.splat=true;bd.y=GROUND;bd.life=Math.min(bd.life,50);} /* splat on floor */
-    }
+    if(!bd.splat){bd.x+=bd.vx;bd.y+=bd.vy;bd.vy+=0.45;bd.vx*=0.9;if(bd.y>=GROUND){bd.splat=true;bd.y=GROUND;bd.life=Math.min(bd.life,50);}}
     bd.life--;if(bd.life>0)nb.push(bd);
   }
   for(var m=0;m<sweatDrops.length;m++){var sw2=sweatDrops[m];sw2.x+=sw2.vx;sw2.y+=sw2.vy;sw2.vy+=0.3;sw2.life--;if(sw2.life>0)nsw.push(sw2);}
   particles=np;effects=ne;bloodDrops=nb;sweatDrops=nsw;
-  /* Passive sweat drip from fighters while active */
   if(gameActive&&p1&&p2){
     if(Math.random()<0.04)sweatBurst(p1.x+(Math.random()-.5)*10,GROUND-70+Math.random()*30,1);
     if(p2&&Math.random()<0.04)sweatBurst(p2.x+(Math.random()-.5)*10,GROUND-70+Math.random()*30,1);
-    /* Heavy punch charge particles - orbit the fist during windup */
     function spawnCharge(f){
       if(f.state!=='heavy')return;
-      var prog=1-(f.punchT/f.punchTMax); /* 0=start, 1=end */
-      if(prog<0.55){ /* windup phase - sparks circle the fist */
+      var prog=1-(f.punchT/f.punchTMax);
+      if(prog<0.55){
         var facesLeft=(f.isCPU||f.isOnlineP2),dir2=facesLeft?-1:1;
         var fistX=f.x+(dir2>0?6:-6),fistY=GROUND-60;
-        var angle=Date.now()*0.025+prog*12;
-        var radius=6+prog*14;
-        particles.push({
-          x:fistX+Math.cos(angle)*radius,y:fistY+Math.sin(angle)*radius,
-          vx:Math.cos(angle+1.57)*1.5,vy:Math.sin(angle+1.57)*1.5-0.5,
-          col:prog>0.35?'#ff6600':'#ffdd00',size:2+prog*4,life:12+prog*8
-        });
-        if(prog>0.4&&Math.random()<0.3){
-          particles.push({
-            x:fistX+(Math.random()-.5)*20,y:fistY+(Math.random()-.5)*20,
-            vx:(Math.random()-.5)*3,vy:-Math.random()*2,
-            col:'#ff2200',size:3+Math.random()*4,life:10
-          });
-        }
+        var angle=Date.now()*0.025+prog*12;var radius=6+prog*14;
+        particles.push({x:fistX+Math.cos(angle)*radius,y:fistY+Math.sin(angle)*radius,vx:Math.cos(angle+1.57)*1.5,vy:Math.sin(angle+1.57)*1.5-0.5,col:prog>0.35?'#ff6600':'#ffdd00',size:2+prog*4,life:12+prog*8});
+        if(prog>0.4&&Math.random()<0.3)particles.push({x:fistX+(Math.random()-.5)*20,y:fistY+(Math.random()-.5)*20,vx:(Math.random()-.5)*3,vy:-Math.random()*2,col:'#ff2200',size:3+Math.random()*4,life:10});
       }
     }
     spawnCharge(p1);if(p2)spawnCharge(p2);
@@ -1962,17 +2436,14 @@ function update(){
 /* ── MAIN LOOP ── */
 function loop(){
   update();
-  ctx.clearRect(0,0,W,H); /* clear full canvas every frame - prevents trails */
-  ctx.save();
-  ctx.translate(Math.round(shakeX),Math.round(shakeY));
+  ctx.clearRect(0,0,W,H);
+  ctx.save();ctx.translate(Math.round(shakeX),Math.round(shakeY));
   drawScene();
   if(tutMode&&tutPhase===1)drawBag();
   if(tutMode&&tutPhase===2&&p2)drawFighter(p2);
   if(!tutMode&&p2)drawFighter(p2);
   if(p1)drawFighter(p1);
-  drawEffects();
-  drawStamBars();
-  drawKOText();
+  drawEffects();drawStamBars();drawKOText();
   ctx.restore();
   requestAnimationFrame(loop);
 }
@@ -1988,12 +2459,8 @@ function setOverlayBtn(label,fn){
   var btn=document.getElementById('goMainBtn');
   var newBtn=btn.cloneNode(true);
   btn.parentNode.replaceChild(newBtn,btn);
-  newBtn.textContent=label||'CONTINUE';
-  newBtn.style.display='';
-  newBtn.addEventListener('click',function(){
-    document.getElementById('gameOverlay').classList.remove('show');
-    if(fn)fn();
-  });
+  newBtn.textContent=label||'CONTINUE';newBtn.style.display='';
+  newBtn.addEventListener('click',function(){document.getElementById('gameOverlay').classList.remove('show');if(fn)fn();});
 }
 function showGameOverlay(title,btnLabel,nextFn){
   document.getElementById('goTitle').textContent=title;
@@ -2001,8 +2468,7 @@ function showGameOverlay(title,btnLabel,nextFn){
   setOverlayBtn(btnLabel||'CONTINUE',nextFn||goToMenu);
 }
 document.getElementById('goMenuBtn').addEventListener('click',function(){
-  document.getElementById('gameOverlay').classList.remove('show');
-  goToMenu();
+  document.getElementById('gameOverlay').classList.remove('show');goToMenu();
 });
 
 /* ── GAME FLOW ── */
@@ -2014,24 +2480,19 @@ function startGame(){
 }
 
 function beginRound(){
-  p1=makeFighter(160,false,false);
-  p2=makeFighter(480,!onlineMode,onlineMode);
+  p1=makeFighter(160,false,false);p2=makeFighter(480,!onlineMode,onlineMode);
   if(onlineMode&&isHost){p2.shortCol1='#1133cc';p2.shortCol2='#001888';}
   cpuIntent='approach';cpuIT=0;
   particles=[];effects=[];bloodDrops=[];sweatDrops=[];
-  document.getElementById('rndTxt').textContent='ROUND '+round;
-  document.getElementById('tmr').textContent='30';
-  document.getElementById('tmr').style.color='#ffdd00';
+  document.getElementById('rndTxt').textContent=T('hud_round')+' '+round;
+  document.getElementById('tmr').textContent='30';document.getElementById('tmr').style.color='#ffdd00';
   document.getElementById('p1HudName').textContent=player.name;
-  document.getElementById('p2HudName').textContent=onlineMode?opponentName:'CPU IRON';
+  document.getElementById('p2HudName').textContent=onlineMode?opponentName:T('hud_cpu');
   document.getElementById('gameOverlay').classList.remove('show');
-  updateBars();
-  gameActive=true;timer=30;
-  clearInterval(timerID);
+  updateBars();gameActive=true;timer=30;clearInterval(timerID);
   if(!onlineMode||isHost){
     timerID=setInterval(function(){
-      if(!gameActive)return;
-      timer--;
+      if(!gameActive)return;timer--;
       document.getElementById('tmr').textContent=(timer<10?'0':'')+timer;
       document.getElementById('tmr').style.color=timer<=8?'#ff2244':'#ffdd00';
       if(timer<=0){clearInterval(timerID);endByTime();}
@@ -2043,20 +2504,18 @@ function endByTime(){
   gameActive=false;
   var p1Won=p1.hp>=p2.hp;
   if(p1Won)score[0]++;else score[1]++;
-  document.getElementById('hudScr').textContent=score[0]+' - '+score[1];
-  updateBars();
+  document.getElementById('hudScr').textContent=score[0]+' - '+score[1];updateBars();
   if(onlineMode&&isHost){setTimeout(function(){hostGameOver(p1Won,false);},700);return;}
   var earned=p1Won?(25+round*8):2;
   sessionTC+=earned;player.tc+=earned;
   document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
   if(p1Won){player.stats.wins++;player.history.unshift({result:'win',opponent:'CPU IRON',rounds:round,ko:false,tc:earned});}
   else{player.stats.losses++;player.history.unshift({result:'loss',opponent:'CPU IRON',rounds:round,ko:false,tc:earned});}
-  saveProfile();
-  if(p1Won)showCelebration();
+  saveProfile();if(p1Won)showCelebration();
   var n2=p1Won?player.name:'CPU IRON';
   setTimeout(function(){
-    if(round<maxRounds){showGameOverlay('TIME UP!\n'+n2+' WINS!','NEXT ROUND',function(){round++;beginRound();});}
-    else{var fw=score[0]>score[1]?player.name:(score[1]>score[0]?'CPU IRON':'DRAW!');showGameOverlay('FINAL!\n'+fw+' WINS!\n+'+sessionTC+' TC','FIGHT AGAIN',function(){startGame();});}
+    if(round<maxRounds){showGameOverlay(T('go_time_up')+'\n'+n2+' '+T('go_wins'),T('go_next_round'),function(){round++;beginRound();});}
+    else{var fw=score[0]>score[1]?player.name:(score[1]>score[0]?T('hud_cpu'):T('go_draw'));showGameOverlay(T('go_final')+'\n'+fw+' '+T('go_wins')+'\n+'+sessionTC+' TC',T('go_fight_again'),function(){startGame();});}
   },700);
 }
 
@@ -2078,6 +2537,8 @@ function goToMenu(){
 
 /* ── STARTUP ── */
 (async function(){
+  /* Load saved language */
+  try{var sl=localStorage.getItem('rb_lang');if(sl&&LANGUAGES[sl]){currentLang=sl;applyLang();}}catch(e){}
   if(sb){
     try{
       var sess=await sb.auth.getSession();
@@ -2090,111 +2551,81 @@ function goToMenu(){
   showScreen('authScreen');
 })();
 
-
 /* ════════════════════════════════════════════════
    TUTORIAL SYSTEM
-   Phase 1: Punching bag - learn jab & heavy
-   Phase 2: Sparring - learn block
 ════════════════════════════════════════════════ */
-var tutMode=false;
-var tutPhase=0; /* 0=off, 1=bag, 2=spar */
-var tutStep=0;
-var tutWaiting=false; /* waiting for player action */
+var tutMode=false,tutPhase=0,tutStep=0,tutWaiting=false;
 var tutJabsDone=0,tutHeaviesDone=0,tutBlocksDone=0,tutPerfectsDone=0;
-
-/* Punching bag: a stationary target drawn on canvas */
 var bag={x:480,hp:100,hurtFlash:0,swingAnim:0,swingDir:1};
 
-var TUT_STEPS=[
-  /* 0 */ {phase:1,msg:"WELCOME TO THE GYM!\nLET'S LEARN THE BASICS.",hint:'PRESS NEXT TO CONTINUE',wait:false},
-  /* 1 */ {phase:1,msg:"WALK UP TO THE BAG\nAND THROW 3 JABS!",hint:'PRESS NEXT WHEN READY',wait:false},
-  /* 2 */ {phase:1,msg:"",hint:'JAB - M1 OR [1]',wait:true,need:'jab',count:3},
-  /* 3 */ {phase:1,msg:"NOW STEP BACK AND\nTRY 2 HEAVY PUNCHES!",hint:'PRESS NEXT WHEN READY',wait:false},
-  /* 4 */ {phase:1,msg:"",hint:'HEAVY - M2 OR [2]',wait:true,need:'heavy',count:2},
-  /* 5 */ {phase:1,msg:"HEAVY HITS HARDER\nBUT IS SLOWER.",hint:'PRESS NEXT TO CONTINUE',wait:false},
-  /* 6 */ {phase:2,msg:"SPAR TIME!\nA TRAINER WILL ATTACK.\nBLOCK THEIR HITS!",hint:'PRESS NEXT TO START',wait:false},
-  /* 7 */ {phase:2,msg:"",hint:'BLOCK - SPACE OR [F]',wait:true,need:'block',count:3},
-  /* 8 */ {phase:2,msg:"YOU'RE A NATURAL!\nNOW GO FIGHT FOR REAL!",hint:'PRESS FINISH TO CLAIM YOUR REWARD',wait:false,finish:true,reward:true}
-];
+function getTutSteps(){return[
+  {phase:1,msg:T('tut_welcome'),hint:T('tut_jab_ready'),wait:false},
+  {phase:1,msg:T('tut_jab_intro'),hint:T('tut_jab_ready'),wait:false},
+  {phase:1,msg:"",hint:T('tut_jab_hint'),wait:true,need:'jab',count:3},
+  {phase:1,msg:T('tut_heavy_intro'),hint:T('tut_jab_ready'),wait:false},
+  {phase:1,msg:"",hint:T('tut_heavy_hint'),wait:true,need:'heavy',count:2},
+  {phase:1,msg:T('tut_heavy_info'),hint:T('tut_jab_ready'),wait:false},
+  {phase:2,msg:T('tut_spar_intro'),hint:T('tut_spar_start'),wait:false},
+  {phase:2,msg:"",hint:T('tut_block_hint'),wait:true,need:'block',count:3},
+  {phase:2,msg:T('tut_finish'),hint:T('tut_finish_hint'),wait:false,finish:true,reward:true}
+];}
+var TUT_STEPS=[];
 
-function tutGetStep(){return TUT_STEPS[tutStep]||null;}
+function tutGetStep(){TUT_STEPS=getTutSteps();return TUT_STEPS[tutStep]||null;}
 
 function startTutorial(){
   tutMode=true;tutPhase=1;tutStep=0;
   tutJabsDone=0;tutHeaviesDone=0;tutBlocksDone=0;tutPerfectsDone=0;
   bag={x:480,hp:100,hurtFlash:0,swingAnim:0,swingDir:1};
   onlineMode=false;
-  /* Launch the game wrapper */
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
   document.getElementById('gameWrapper').classList.add('active');
   document.getElementById('onlinePingBadge').style.display='none';
-  /* Setup fighters */
-  p1=makeFighter(160,false,false);
-  p2=null; /* no p2 in bag phase */
+  p1=makeFighter(160,false,false);p2=null;
   particles=[];effects=[];bloodDrops=[];sweatDrops=[];
   score=[0,0];round=1;sessionTC=0;timer=30;
-  document.getElementById('rndTxt').textContent='TUTORIAL';
-  document.getElementById('tmr').textContent='--';
-  document.getElementById('tmr').style.color='#00ffcc';
+  document.getElementById('rndTxt').textContent=T('hud_tutorial');
+  document.getElementById('tmr').textContent='--';document.getElementById('tmr').style.color='#00ffcc';
   document.getElementById('hudScr').textContent='';
-  document.getElementById('hudTC').textContent='◆ '+player.tc+' TC';
+  document.getElementById('hudTC').textContent='\u25C6 '+player.tc+' TC';
   document.getElementById('p1HudName').textContent=player.name;
-  document.getElementById('p2HudName').textContent='BAG';
-  document.getElementById('hf1').style.width='100%';
-  document.getElementById('hf2').style.width='100%';
+  document.getElementById('p2HudName').textContent=T('hud_bag');
+  document.getElementById('hf1').style.width='100%';document.getElementById('hf2').style.width='100%';
   document.getElementById('gameOverlay').classList.remove('show');
   gameActive=true;
-  /* Show tutorial overlay */
   document.getElementById('tutOverlay').style.display='flex';
   tutShowStep();
 }
 
 function tutShowStep(){
-  var st=tutGetStep();
-  if(!st){tutFinish();return;}
+  var st=tutGetStep();if(!st){tutFinish();return;}
   document.getElementById('tutMsg').textContent=st.msg;
   document.getElementById('tutHint').textContent=st.hint;
   var nb=document.getElementById('tutNextBtn');
   if(!st.wait){
     nb.style.display='';
     var rewardAvail=st.reward&&!player.tutorialDone;
-    nb.textContent=st.finish?(rewardAvail?'CLAIM 500 TC! ✔':'FINISH! ✔'):'NEXT ►';
-    if(rewardAvail){document.getElementById('tutMsg').textContent=st.msg+'\n\n+ 500 TC REWARD!';}
-    /* Show box for non-waiting steps */
+    nb.textContent=st.finish?(rewardAvail?T('tut_claim'):T('tut_finish_btn')):T('tut_next');
+    if(rewardAvail){document.getElementById('tutMsg').textContent=st.msg+'\n\n'+T('tut_reward');}
     document.getElementById('tutOverlay').style.display='flex';
-  }else{
-    nb.style.display='none';
-    document.getElementById('tutOverlay').style.display='none';
-  }
+  }else{nb.style.display='none';document.getElementById('tutOverlay').style.display='none';}
   tutWaiting=st.wait;
-  /* Switch phase */
   if(st.phase===2&&tutPhase===1){
-    tutPhase=2;
-    /* Swap to sparring: create CPU opponent who only jabs slowly */
-    p2=makeFighter(500,false,false);
-    p2.isCPU=false;p2.isOnlineP2=true; /* faces left like opponent */
-    p2.shortCol1='#1133cc';p2.shortCol2='#001888';
-    p2.gloveCol='#222222';p2.gloveShadow='#000000';
-    document.getElementById('p2HudName').textContent='TRAINER';
+    tutPhase=2;p2=makeFighter(500,false,false);
+    p2.isCPU=false;p2.isOnlineP2=true;
+    p2.shortCol1='#1133cc';p2.shortCol2='#001888';p2.gloveCol='#222222';p2.gloveShadow='#000000';
+    document.getElementById('p2HudName').textContent=T('hud_trainer');
     document.getElementById('hf2').style.width='100%';
-    /* Move player to left side for spar */
     if(p1)p1.x=140;
   }
   if(st.phase===1&&p2!==null){p2=null;}
 }
 
 function tutNext(){
-  var prevStep=tutStep;
-  tutStep++;
+  var prevStep=tutStep;tutStep++;
   tutJabsDone=0;tutHeaviesDone=0;tutBlocksDone=0;tutPerfectsDone=0;
-  /* After jab action (step 2): tutTrackAtk already showed step 3 msg, skip to step 4 (heavy action) */
-  if(prevStep===2){
-    tutStep=4;
-    if(p1){p1.x=120;particles=[];effects=[];bag.hp=100;bag.swingAnim=0;}
-  }
-  /* After heavy action (step 4): tutTrackAtk showed step 5 msg, skip to step 6 (spar intro) */
+  if(prevStep===2){tutStep=4;if(p1){p1.x=120;particles=[];effects=[];bag.hp=100;bag.swingAnim=0;}}
   if(prevStep===4){tutStep=6;}
-  /* After block action (step 7): tutTrackAtk showed final msg, skip to step 8 (finish) */
   if(prevStep===7){tutStep=8;}
   tutShowStep();
 }
@@ -2204,164 +2635,103 @@ function tutFinish(){
   document.getElementById('tutOverlay').style.display='none';
   gameActive=false;
   document.getElementById('gameWrapper').classList.remove('active');
-  /* Award 500 TC first time only */
-  if(!player.tutorialDone){
-    player.tutorialDone=true;
-    player.tc+=500;
-    saveProfile();
-  }
+  if(!player.tutorialDone){player.tutorialDone=true;player.tc+=500;saveProfile();}
   showScreen('menuScreen');updateMenuUI();
 }
 
-/* Called from doAtk when in tutorial mode */
 function tutTrackAtk(type,isBlock,isPerfect){
   if(!tutMode||!tutWaiting)return;
   var st=tutGetStep();if(!st||!st.need)return;
   if(st.need==='jab'&&type==='jab'){
     tutJabsDone++;
-    if(tutJabsDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent='NICE WORK!\nNOW STEP BACK AND\nTRY 2 HEAVY PUNCHES!';document.getElementById('tutHint').textContent='PRESS NEXT WHEN READY';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('GREAT!',p1.x,-100,'#00ffcc');}
-    else{addFX(tutJabsDone+'/'+st.count+' JABS',p1.x,-90,'#00ffcc');}
+    if(tutJabsDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent=T('tut_heavy_intro');document.getElementById('tutHint').textContent=T('tut_jab_ready');document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX(T('tut_great'),p1.x,-100,'#00ffcc');}
+    else{addFX(tutJabsDone+T('tut_jabs_count'),p1.x,-90,'#00ffcc');}
   }
   if(st.need==='heavy'&&type==='heavy'){
     tutHeaviesDone++;
-    if(tutHeaviesDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent='HEAVY HITS HARDER\nBUT IS SLOWER.';document.getElementById('tutHint').textContent='PRESS NEXT TO CONTINUE';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('POWERFUL!',p1.x,-100,'#ff6600');}
-    else{addFX(tutHeaviesDone+'/'+st.count+' HEAVY',p1.x,-90,'#ff6600');}
+    if(tutHeaviesDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent=T('tut_heavy_info');document.getElementById('tutHint').textContent=T('tut_jab_ready');document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX(T('tut_powerful'),p1.x,-100,'#ff6600');}
+    else{addFX(tutHeaviesDone+T('tut_heavies_count'),p1.x,-90,'#ff6600');}
   }
   if(st.need==='block'&&isBlock){
     tutBlocksDone++;
-    if(tutBlocksDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent="YOU'RE A NATURAL!\nNOW GO FIGHT FOR REAL!";document.getElementById('tutHint').textContent='PRESS FINISH TO CLAIM YOUR REWARD';document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';document.getElementById('tutNextBtn').textContent='CLAIM 500 TC! ✔';addFX('WELL BLOCKED!',p1.x,-100,'#00ffcc');}
-    else{addFX('BLOCK '+tutBlocksDone+'/'+st.count,p1.x,-90,'#00ffcc');}
+    if(tutBlocksDone>=st.count){tutWaiting=false;document.getElementById('tutMsg').textContent=T('tut_finish');document.getElementById('tutHint').textContent=T('tut_finish_hint');document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';document.getElementById('tutNextBtn').textContent=T('tut_claim');addFX(T('tut_well_blocked'),p1.x,-100,'#00ffcc');}
+    else{addFX(T('mob_block')+' '+tutBlocksDone+T('tut_blocks_count'),p1.x,-90,'#00ffcc');}
   }
   if(st.need==='perfect'&&isPerfect){
     tutPerfectsDone++;
-    if(tutPerfectsDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX('PERFECT!!',p1.x,-100,'#ffdd00');}
+    if(tutPerfectsDone>=st.count){tutWaiting=false;document.getElementById('tutOverlay').style.display='flex';document.getElementById('tutNextBtn').style.display='';addFX(T('tut_perfect_hit'),p1.x,-100,'#ffdd00');}
   }
 }
 
-/* Draw the punching bag */
 function drawBag(){
   if(!tutMode||tutPhase!==1)return;
-  var bx=bag.x, ropeTop=60; /* ceiling anchor Y */
-  var ropeLen=GROUND-ropeTop-100; /* length from ceiling to bag top */
-  /* Dampen swing naturally */
-  bag.swingAnim*=0.96;
-  if(Math.abs(bag.swingAnim)<0.001)bag.swingAnim=0;
-  var angle=bag.swingAnim;
-  /* rope pivot at ceiling center */
-  var pivotX=bx, pivotY=ropeTop;
-  var bagTopX=pivotX+Math.sin(angle)*ropeLen;
-  var bagTopY=pivotY+Math.cos(angle)*ropeLen;
-  /* Draw rope */
-  ctx.save();
-  ctx.strokeStyle='#666';ctx.lineWidth=4;
+  var bx=bag.x,ropeTop=60;var ropeLen=GROUND-ropeTop-100;
+  bag.swingAnim*=0.96;if(Math.abs(bag.swingAnim)<0.001)bag.swingAnim=0;
+  var angle=bag.swingAnim;var pivotX=bx,pivotY=ropeTop;
+  var bagTopX=pivotX+Math.sin(angle)*ropeLen;var bagTopY=pivotY+Math.cos(angle)*ropeLen;
+  ctx.save();ctx.strokeStyle='#666';ctx.lineWidth=4;
   ctx.beginPath();ctx.moveTo(pivotX,pivotY);ctx.lineTo(bagTopX,bagTopY);ctx.stroke();
-  /* ceiling hook */
-  fr(pivotX-10,ropeTop-10,20,14,'#555');
-  fr(pivotX-4,ropeTop+2,8,12,'#777');
-  /* Draw bag at bottom of rope */
-  ctx.save();
-  ctx.translate(bagTopX,bagTopY);
-  ctx.rotate(angle*0.3);
+  fr(pivotX-10,ropeTop-10,20,14,'#555');fr(pivotX-4,ropeTop+2,8,12,'#777');
+  ctx.save();ctx.translate(bagTopX,bagTopY);ctx.rotate(angle*0.3);
   var bw=34,bh=88;
-  /* shadow */
-  ctx.save();ctx.globalAlpha=0.18;ctx.fillStyle='#000';
-  ctx.beginPath();ctx.ellipse(2,bh+8,18,5,0,0,Math.PI*2);ctx.fill();
-  ctx.restore();
-  /* bag body */
+  ctx.save();ctx.globalAlpha=0.18;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(2,bh+8,18,5,0,0,Math.PI*2);ctx.fill();ctx.restore();
   ctx.fillStyle='#000';ctx.fillRect(-bw/2-2,0,bw+4,bh+4);
   var bagCol=bag.hurtFlash>0?'#bb4400':'#7a2d00';
   ctx.fillStyle=bagCol;ctx.fillRect(-bw/2,0,bw,bh);
-  /* leather highlight */
   ctx.fillStyle='#a04000';ctx.fillRect(-bw/2+4,4,10,bh-8);
   ctx.fillStyle='rgba(255,160,60,0.08)';ctx.fillRect(-bw/2+3,3,bw-6,bh-6);
-  /* stitching */
   ctx.strokeStyle='#3a1400';ctx.lineWidth=1.5;
-  [bh*0.33,bh*0.66].forEach(function(sy){
-    ctx.beginPath();ctx.moveTo(-bw/2+2,sy);ctx.lineTo(bw/2-2,sy);ctx.stroke();
-  });
+  [bh*0.33,bh*0.66].forEach(function(sy){ctx.beginPath();ctx.moveTo(-bw/2+2,sy);ctx.lineTo(bw/2-2,sy);ctx.stroke();});
   ctx.beginPath();ctx.moveTo(0,2);ctx.lineTo(0,bh-2);ctx.stroke();
-  /* top/bottom caps */
   ctx.fillStyle='#4a1800';ctx.fillRect(-bw/2,0,bw,10);ctx.fillRect(-bw/2,bh-8,bw,8);
-  /* Lace */
-  ctx.fillStyle='#eecc88';
-  for(var li=0;li<4;li++) ctx.fillRect(-3,12+li*20,6,3);
-  /* HP bar below bag */
+  ctx.fillStyle='#eecc88';for(var li=0;li<4;li++)ctx.fillRect(-3,12+li*20,6,3);
   var bpct=bag.hp/100;
-  ctx.fillStyle='#111';ctx.fillRect(-bw/2,bh+6,bw,7);
-  ctx.fillStyle='#333';ctx.fillRect(-bw/2+1,bh+7,bw-2,5);
-  ctx.fillStyle=bpct>0.5?'#00cc55':bpct>0.25?'#ffaa00':'#ff2244';
-  ctx.fillRect(-bw/2+1,bh+7,Math.floor((bw-2)*bpct),5);
-  /* HP label */
-  ctx.font='5px "Press Start 2P"';ctx.fillStyle='#aaa';ctx.textAlign='center';
-  ctx.fillText('BAG HP',0,bh+22);ctx.textAlign='left';
-  ctx.restore();/* bag local */
-
-  /* "WALK CLOSER" arrow if too far */
+  ctx.fillStyle='#111';ctx.fillRect(-bw/2,bh+6,bw,7);ctx.fillStyle='#333';ctx.fillRect(-bw/2+1,bh+7,bw-2,5);
+  ctx.fillStyle=bpct>0.5?'#00cc55':bpct>0.25?'#ffaa00':'#ff2244';ctx.fillRect(-bw/2+1,bh+7,Math.floor((bw-2)*bpct),5);
+  ctx.font='5px "Press Start 2P"';ctx.fillStyle='#aaa';ctx.textAlign='center';ctx.fillText(T('tut_bag_hp'),0,bh+22);ctx.textAlign='left';
+  ctx.restore();
   var dist=p1?Math.abs(p1.x-bag.x):999;
-  var canReach=(dist<=130);
-  if(!canReach){
-    ctx.save();ctx.globalAlpha=0.7+Math.sin(Date.now()*0.008)*0.3;
-    ctx.fillStyle='#00ffcc';ctx.font='6px "Press Start 2P"';ctx.textAlign='center';
-    var arrowX=bag.x>320?bag.x-50:bag.x+50;
-    ctx.fillText(bag.x>p1.x?'>>':'<<',arrowX,bagTopY-10);
+  if(dist>130){
+    ctx.save();ctx.globalAlpha=0.7+Math.sin(Date.now()*0.008)*0.3;ctx.fillStyle='#00ffcc';ctx.font='6px "Press Start 2P"';ctx.textAlign='center';
+    var arrowX=bag.x>320?bag.x-50:bag.x+50;ctx.fillText(bag.x>p1.x?'>>':'<<',arrowX,bagTopY-10);
     ctx.restore();ctx.textAlign='left';
   }
-  ctx.restore();/* global save */
+  ctx.restore();
   if(bag.hurtFlash>0)bag.hurtFlash--;
 }
 
-/* Bag hit logic (replaces doAtk for tutorial phase 1) */
 function doBagAtk(type){
   if(!p1)return;
-  /* Must be close enough to the bag */
-  if(Math.abs(p1.x-bag.x)>130){addFX('TOO FAR!',p1.x,-60,'#ff4444');return;}
+  if(Math.abs(p1.x-bag.x)>130){addFX(T('fx_too_far'),p1.x,-60,'#ff4444');return;}
   if(type==='jab'&&p1.jabCD>0)return;
   if(type==='heavy'&&p1.heavyCD>0){addFX('COOLING!',p1.x,-60,'#888');return;}
   if(p1.stamina<8){addFX('NO STAM!',p1.x,-60,'#666');return;}
   var jabFrames=16,hvyFrames=52;
   p1.leadHand=1-p1.leadHand;
   p1.state=type;p1.stateTimer=type==='jab'?jabFrames:hvyFrames;
-  p1.punchT=p1.stateTimer;p1.punchTMax=p1.stateTimer;
-  p1.punchCD=p1.stateTimer;
+  p1.punchT=p1.stateTimer;p1.punchTMax=p1.stateTimer;p1.punchCD=p1.stateTimer;
   if(type==='jab')p1.jabCD=JAB_CD;
   if(type==='heavy')p1.heavyCD=HEAVY_CD;
   p1.stamina=Math.max(0,p1.stamina-(type==='jab'?18:38));
-  var dmg=type==='jab'?6:14;
-  bag.hp=Math.max(0,bag.hp-dmg);
-  bag.hurtFlash=10;
-  /* swing handled in doBagAtk above */
-  effects=[]; /* clear old hit text before showing new one */
-  burst(bag.x,GROUND-80,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?12:5);
+  var dmg=type==='jab'?6:14;bag.hp=Math.max(0,bag.hp-dmg);bag.hurtFlash=10;
+  effects=[];burst(bag.x,GROUND-80,type==='heavy'?'#ff4400':'#ffcc00',type==='heavy'?12:5);
   sweatBurst(bag.x,GROUND-80,3);
-  /* Gentle swing on bag hit - no screen shake */
   bag.swingAnim+=(type==='heavy'?0.22:0.09)*(p1.x<bag.x?1:-1);
   bag.swingAnim=Math.max(-0.35,Math.min(0.35,bag.swingAnim));
-  addFX(type==='heavy'?'BOOM!':'JAB!',bag.x,-75,'#ffdd00');
+  addFX(type==='heavy'?T('fx_heavy'):T('fx_jab'),bag.x,-75,'#ffdd00');
   tutTrackAtk(type,false,false);
-  if(bag.hp<=0){
-    bag.hp=100; /* reset bag */
-    burst(bag.x,GROUND-60,'#ffdd00',20);
-    addFX('BAG DESTROYED!',bag.x,-110,'#ffdd00');
-  }
+  if(bag.hp<=0){bag.hp=100;burst(bag.x,GROUND-60,'#ffdd00',20);addFX(T('tut_bag_destroyed'),bag.x,-110,'#ffdd00');}
 }
 
-/* Trainer AI for spar phase - attacks slowly so player can practice blocking */
 var trainerCD=0,trainerAttackCount=0;
 function updateTrainer(){
   if(!p2||!p1||!gameActive||tutPhase!==2)return;
-  /* Trainer just stands still and jabs periodically */
   p2.walkDir=0;p2.blocking=false;
   if(trainerCD>0){trainerCD--;return;}
-  /* Only attack during the block/perfect block steps */
   var st=tutGetStep();
   if(!st||!st.need||st.need!=='block')return;
-  trainerCD=90; /* attack every 1.5 seconds */
-  /* Slow jab toward player */
-  doAtk(p2,p1,'jab');
+  trainerCD=90;doAtk(p2,p1,'jab');
 }
-
-/* Hook into doAtk to track tutorial blocks */
-var _origDoAtk=doAtk;
 
 /* ── GLOBAL G ── */
 var G={
@@ -2372,7 +2742,8 @@ var G={
   renderInventory:renderInventory,switchInvTab:switchInvTab,
   showOnlineLobby:showOnlineLobby,createRoom:createRoom,joinRoom:joinRoom,leaveOnline:leaveOnline,
   updateMenuUI:updateMenuUI,player:player,
-  startTutorial:startTutorial,tutNext:tutNext
+  startTutorial:startTutorial,tutNext:tutNext,
+  setLanguage:setLanguage,renderSettings:renderSettings
 };
 
 document.getElementById('loginBtn').addEventListener('click',function(){G.doLogin();});
